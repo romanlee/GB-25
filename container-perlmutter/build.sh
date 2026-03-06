@@ -29,7 +29,7 @@ if [[ "${@}" == "all" ]] || [[ "${@}" == "base" ]]; then
 
     podman-hpc build -f Containerfile-base -t "${BASE_IMAGE}:${BASE_TAG}" .
 
-    echo "Base image successfully built (locals only)"
+    echo "SUCCESS! Base image built."
 
 fi
 
@@ -60,5 +60,5 @@ if [[ "${@}" == "all" ]] || [[ "${@}" == "final" ]]; then
     # Required for images built on login nodes to be available on compute nodes.
     podman-hpc migrate "${IMAGE}:${TAG}"
 
-    echo "Final image successfully built and migrated"
+    echo "SUCCESS! Final image built and migrated."
 fi

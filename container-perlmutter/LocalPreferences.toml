@@ -3,5 +3,5 @@ local = "true"
 version = "12.8"
 
 [Reactant_jll]
-cuda_version = "12.6"
 gpu = "cuda"
+gpu_version = "13.0"

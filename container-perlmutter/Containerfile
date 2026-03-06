@@ -10,6 +10,7 @@ ARG DESTDIR
 RUN mkdir -pv $DESTDIR
 
 # Copy over the local environment, together with the source code and everything.
+# assumes you have Manifest.toml locally
 COPY Manifest.toml $DESTDIR/Manifest.toml
 COPY Project.toml $DESTDIR/Project.toml
 # This time we use `LocalPreferences.toml` file to enable CUDA support in `Reactant_jll`,

@@ -53,6 +53,15 @@ or call `podman-hpc` directly:
 podman-hpc run --rm --gpu reactant:latest <command>
 ```
 
+  Usage:
+
+  cd sharding
+  julia perlmutter_scaling_test_containerized.jl simple_sharding_problem.jl
+
+  Optional image override:
+
+  GB25_CONTAINER_IMAGE=reactant:latest julia perlmutter_scaling_test_containerized.jl simple_sharding_problem.jl
+
 ## Acknowledgements
 
 Thanks to Theofilos Manitaras (CSCS) for providing a first draft of the container setup.

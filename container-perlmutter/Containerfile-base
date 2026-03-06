@@ -25,15 +25,20 @@ ENV JULIAUP_DEPOT_PATH=/usr/local/julia
 # Install Juliaup
 RUN wget -O install.sh https://install.julialang.org && \
     chmod +x ./install.sh && \
-    ./install.sh --yes --path /usr/local/julia --default-channel 1.11.4
+    ./install.sh --yes --path /usr/local/julia --default-channel 1.11.7
 
 ENV PATH=/usr/local/julia/bin:$PATH
 
 RUN julia -E 'Base.current_image_targets()'
 RUN julia -E 'Base.DEPOT_PATH'
 
-# First installation of the environment. We inline-create the preference file
-# to avoid `podman-hpc` build-context xattr issues on some filesystems.
+# First installation of the environment. In this iteration we only want to set the
+# preference for `CUDA_Runtime_jll`, contained in the `LocalPreferences-base.toml` file,
+# because the `Reactant_jll` build with CUDA is way larger and would take an awful lot of
+# time to push to the remote registry.  This is unideal, wouldn't have this concern with a
+# single container setup.
+# We inline-create the preference file to avoid `podman-hpc` build-context xattr 
+# issues on some filesystems.
 RUN printf '%s\n' \
     '[CUDA_Runtime_jll]' \
     'local = "true"' \
