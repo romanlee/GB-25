@@ -4,15 +4,13 @@ account = "m4672"
 account = "m5096"
 account = "m5176"
 
-# queue = "regular"
-queue = "debug"
+queue = "regular"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
 # run params
 submit   = true
 run_name = "r_react_"
-# time     = "01:00:00"
-time     = "00:10:00"
+time     = "01:00:00"
 Ngpus    = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
 Ngpus    = [4]
 type     = "weak"
