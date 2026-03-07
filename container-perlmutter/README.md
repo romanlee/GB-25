@@ -64,5 +64,5 @@ podman-hpc run --rm --gpu reactant:latest <command>
 
 ## Acknowledgements
 
-Thanks to Theofilos Manitaras (CSCS) for providing a first draft of the container setup.
-All further complications are by Mosè Giordano (UCL).
+This containter setup is derived from that for the Alps sytem, due to Mosè Giordano (UCL).
+All further complications are the fault of Roman Lee.

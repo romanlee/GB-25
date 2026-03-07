@@ -37,12 +37,7 @@ RUN julia -E 'Base.DEPOT_PATH'
 # because the `Reactant_jll` build with CUDA is way larger and would take an awful lot of
 # time to push to the remote registry.  This is unideal, wouldn't have this concern with a
 # single container setup.
-# We inline-create the preference file to avoid `podman-hpc` build-context xattr 
-# issues on some filesystems.
-RUN printf '%s\n' \
-    '[CUDA_Runtime_jll]' \
-    'local = "true"' \
-    'version = "12.8"' > /LocalPreferences.toml
+COPY LocalPreferences-base.toml /LocalPreferences.toml
 RUN git clone --depth=1 https://github.com/PRONTOLab/GB-25 && \
     cd GB-25 && \
     export JULIA_DEBUG="Reactant_jll" && \
