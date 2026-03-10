@@ -3,7 +3,7 @@
 ## Introduction
 
 This directory contains the code to build a container for running the code on Perlmutter using `podman-hpc`.
-It keeps the same two-stage flow as `container-alps`:
+It keeps the same two-stage flow as `container-alps/`:
 
 * first a "base" container, which takes longer to build.
 * the "final" container, based on "base", which uses the local environment, to reflect local changes.
@@ -37,9 +37,11 @@ command from `sharding/`:
 
 ```
 julia perlmutter_scaling_test_containerized.jl <problem script>
+```
 
 Optional image override:
 
+```
 GB25_CONTAINER_IMAGE=reactant:latest julia perlmutter_scaling_test_containerized.jl <problem script>
 ```
 
