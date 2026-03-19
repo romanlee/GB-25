@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="build-container"
-#SBATCH --time="01:00:00"
+#SBATCH --time="00:30:00"
 #SBATCH --output=build-container-%j.out
 #SBATCH --error=build-container-%j.err
 #SBATCH --nodes=1
