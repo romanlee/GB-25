@@ -62,7 +62,7 @@ export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
 srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     $(job_dir)/launcher.sh \\
-    podman-hpc run --rm --gpu \\
+    podman-hpc run --rm --gpu --nccl-cu12 --net host \\
     --env SLURM_JOB_ID \\
     --env SLURM_STEP_NODELIST \\
     --env SLURM_NTASKS \\
