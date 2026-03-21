@@ -48,6 +48,9 @@ if [[ "${@}" == "all" ]] || [[ "${@}" == "base" ]]; then
     podman-hpc build -f Containerfile-base -t "${BASE_IMAGE}:${BASE_TAG}" .
     popd
 
+    # make image persistent on scratch
+    podman-hpc migrate "${BASE_IMAGE}:${BASE_TAG}"
+
     echo
     echo "SUCCESS! Base image built."
     echo
@@ -75,7 +78,7 @@ if [[ "${@}" == "all" ]] || [[ "${@}" == "final" ]]; then
     podman-hpc build --build-arg=DESTDIR="${WORKDIR}" --build-arg=BASE_IMAGE_TAG="${BASE_IMAGE}:${BASE_TAG}" -f Containerfile -t "${IMAGE}:${TAG}" ..
     popd
 
-    # Required for images built on login nodes to be available on compute nodes.
+    # make image persistent on scratch
     podman-hpc migrate "${IMAGE}:${TAG}"
 
     echo
