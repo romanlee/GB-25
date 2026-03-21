@@ -4,4 +4,4 @@ version = "12.8"
 
 [Reactant_jll]
 gpu = "cuda"
-gpu_version = "13.0"
+gpu_version = "13.1"
