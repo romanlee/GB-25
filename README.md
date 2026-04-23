@@ -2,19 +2,6 @@
 
 This repository accompanies a submission for the 2025 Gordon Bell climate prize submission that showcases Reactant-acceleration of Oceananigans, ClimaOcean, and SpeedyWeather simulations.
 
-## TODO/current status
-
-GB25 perlmutter container TODO (See perlmutter `~/scratch-backups/2026.03.26/GB25/2026.03.20.container-debug` for latest debug runs)
-* more robust way to do env flags, `--env-file`
-* julia 11.9
-* gdrcopy: do we actually need? How to get working on pm.
-* make sure versions of everything (LocalPreferences.toml) are what they should be. Eg, seem to be mixing cuda 12.8 and 13.0 (but maybe this one's fine)
-* pm julia has some special localpreferences.toml files to configure eg MPI prefs given your
-  module loads. Do we need those in the container?
-* one of the main motivations of containers for julia is not haveing to rebuild every time on distributed nodes. Verify this.
-* get the container build to fail if I get an error when building the jluia stuff (to get it to fail, set the reactant jll cuda version to 13.0)
-* validate performance
-
 ## Package organization
 
 * `src` implements two models:
