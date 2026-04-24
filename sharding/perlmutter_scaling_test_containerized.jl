@@ -9,12 +9,12 @@ queue = "debug"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
 # run params
-submit   = true
+submit   = false
 run_name = "r_react_"
 time     = "01:00:00"
 time     = "00:10:00"
 Ngpus    = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
-Ngpus    = [4]
+Ngpus    = [4, 8]
 type     = "weak"
 
 container_image = get(ENV, "GB25_CONTAINER_IMAGE", "reactant:latest")
@@ -46,14 +46,10 @@ export SBATCH_ACCOUNT=$(cfg.account)
 export SALLOC_ACCOUNT=$(cfg.account)
 export JULIA_CUDA_MEMORY_POOL=none
 
-# Equivalent to \$NCCL_DIR/lib/libnccl.so but will also work if module doesn't set NCCL_DIR
-# export NCCL_LIB_PATH=\$(julia -e "n=\\"libnccl\\";using Libdl;dlopen(n);filter(contains(n),dllist())|>first|>println")
-
 #
 # HACKS to get this to work on Perlmutter
 #
 
-# export LD_PRELOAD=\$NCCL_LIB_PATH
 export FI_CXI_RDZV_GET_MIN=0
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 # export MPICH_SMP_SINGLE_COPY_MODE=NONE
@@ -62,6 +58,7 @@ export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 # export MPICH_GPU_SUPPORT_ENABLED=0
 export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
+
 srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \
     $(job_dir)/launcher.sh \
     podman-hpc run --rm --gpu --nccl-cu12 --net host \
@@ -70,7 +67,12 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \
     --env SLURM_NTASKS \
     --env SLURM_PROCID \
     --env SLURM_LOCALID \
+    --env SBATCH_ACCOUNT \
+    --env SALLOC_ACCOUNT \
     --env CUDA_VISIBLE_DEVICES \
+    --env TZ \
+    --env Ngpu \
+    --env resolution_fraction \
     --env XLA_FLAGS \
     --env XLA_REACTANT_GPU_MEM_FRACTION \
     --env FI_CXI_RDZV_GET_MIN \
