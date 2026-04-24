@@ -17,7 +17,7 @@ Ngpus    = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
 Ngpus    = [4, 8]
 type     = "weak"
 
-container_image = get(ENV, "GB25_CONTAINER_IMAGE", "reactant:latest")
+container_image = get(ENV, "GB25_CONTAINER_IMAGE", "gb25:latest")
 
 gpus_per_node = 4
 cpus_per_task = 16
