@@ -9,7 +9,7 @@ queue = "debug"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
 # run params
-submit   = false
+submit   = true
 run_name = "r_react_"
 time     = "01:00:00"
 time     = "00:10:00"
@@ -85,7 +85,8 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \
     --volume $(job_root):$(job_root) \
     --workdir $(project_path) \
     $(container_image) \
-    julia --project=$(project_path) --compiled-modules=strict -O0 $(run_file)
+    sh -lc 'unset no_proxy http_proxy https_proxy NO_PROXY HTTP_PROXY HTTPS_PROXY; \
+    exec julia --project=$(project_path) --compiled-modules=strict -O0 $(run_file)'
 """
 end
 
