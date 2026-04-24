@@ -14,7 +14,7 @@ run_name = "r_react_"
 time     = "01:00:00"
 time     = "00:10:00"
 Ngpus    = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
-Ngpus    = [4, 8]
+Ngpus    = [4]
 type     = "weak"
 
 container_image = get(ENV, "GB25_CONTAINER_IMAGE", "gb25:latest")
