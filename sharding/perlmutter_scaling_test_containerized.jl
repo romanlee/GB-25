@@ -5,12 +5,14 @@ account = "m5096"
 account = "m5176"
 
 queue = "regular"
+queue = "debug"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
 # run params
 submit   = true
 run_name = "r_react_"
 time     = "01:00:00"
+time     = "00:10:00"
 Ngpus    = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048]
 Ngpus    = [4]
 type     = "weak"
@@ -25,7 +27,7 @@ perlmutter_config = JobConfig(; username, account, out_dir, time, cpus_per_task,
 
 function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir, Ngpu,
                                       resolution_fraction, project_path, run_file)
-job_root = dirname(job_dir)
+    job_root = dirname(job_dir)
 
 """
 #!/bin/bash -l
@@ -60,27 +62,27 @@ export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 # export MPICH_GPU_SUPPORT_ENABLED=0
 export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
-srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
-    $(job_dir)/launcher.sh \\
-    podman-hpc run --rm --gpu --nccl-cu12 --net host \\
-    --env SLURM_JOB_ID \\
-    --env SLURM_STEP_NODELIST \\
-    --env SLURM_NTASKS \\
-    --env SLURM_PROCID \\
-    --env SLURM_LOCALID \\
-    --env CUDA_VISIBLE_DEVICES \\
-    --env XLA_FLAGS \\
-    --env XLA_REACTANT_GPU_MEM_FRACTION \\
-    --env FI_CXI_RDZV_GET_MIN \\
-    --env FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD \\
-    --env NCCL_BUFFSIZE \\
-    --env JULIA_CUDA_USE_COMPAT \\
-    --env JULIA_CUDA_MEMORY_POOL \\
-    --env JULIA_DEBUG \\
-    --volume $(project_path):$(project_path) \\
-    --volume $(job_root):$(job_root) \\
-    --workdir $(project_path) \\
-    $(container_image) \\
+srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \
+    $(job_dir)/launcher.sh \
+    podman-hpc run --rm --gpu --nccl-cu12 --net host \
+    --env SLURM_JOB_ID \
+    --env SLURM_STEP_NODELIST \
+    --env SLURM_NTASKS \
+    --env SLURM_PROCID \
+    --env SLURM_LOCALID \
+    --env CUDA_VISIBLE_DEVICES \
+    --env XLA_FLAGS \
+    --env XLA_REACTANT_GPU_MEM_FRACTION \
+    --env FI_CXI_RDZV_GET_MIN \
+    --env FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD \
+    --env NCCL_BUFFSIZE \
+    --env JULIA_CUDA_USE_COMPAT \
+    --env JULIA_CUDA_MEMORY_POOL \
+    --env JULIA_DEBUG \
+    --volume $(project_path):$(project_path) \
+    --volume $(job_root):$(job_root) \
+    --workdir $(project_path) \
+    $(container_image) \
     julia --project=$(project_path) --compiled-modules=strict -O0 $(run_file)
 """
 end
