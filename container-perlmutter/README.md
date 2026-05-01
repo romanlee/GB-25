@@ -9,17 +9,9 @@ It uses a single-stage build for simplicity, unlike on alps.
 
 On Perlmutter, first instantiate the GordonBell25 project, then run the following from `container-perlmutter/`:
 
-```sh
-sbatch ./build.sh
-```
-
-Before submitting, edit `build.sh` and set `#SBATCH --account=<NERSC_ACCOUNT>` to your allocation.
-
-The image can also be built on an interactive node
 ```
 bash ./build.sh > build.out
 ```
-Note, however, it must be a gpu node to resolve CUDA dependencies. 
 
 ## Running on Perlmutter
 

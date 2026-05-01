@@ -1,17 +1,5 @@
 #!/bin/bash
 
-#SBATCH --job-name="build-container"
-#SBATCH --time="00:30:00"
-#SBATCH --output=build-container-%j.out
-#SBATCH --error=build-container-%j.err
-#SBATCH --nodes=1
-#SBATCH --gpus-per-node=4
-#SBATCH --gpu-bind=per_task:4
-#SBATCH --constraint=gpu
-#SBATCH --qos=regular
-#SBATCH --account=m5176
-#SBATCH --exclusive
-
 set -euxo pipefail
 
 SCRIPT_DIR="$(realpath "${PWD}")"
