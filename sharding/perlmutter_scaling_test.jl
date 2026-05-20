@@ -10,7 +10,7 @@ out_dir = joinpath(ENV["SCRATCH"], "GB25")
 # run params
 submit   = true
 run_name = "r_react_"
-time     = "01:00:00"
+time     = "00:40:00"
 
 # We want to preserve a 2:1 aspect ratio for the x:y dimensions in all runs
 # so we pick Ngpus from the set of numbers 8*n^2 where n is any integer.
@@ -20,6 +20,7 @@ time     = "01:00:00"
 Ngpus     = [4, 8, 32, 72, 128, 288, 512, 968, 2048, 6136]
 Ngpus     = [6136]
 Ngpus     = [4]
+Ngpus     = [4, 8, 32, 72, 128]
 
 type     = "weak"
 
@@ -56,8 +57,8 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
 #SBATCH --account=$(cfg.account)
 #SBATCH --output=$(job_dir)/%j.out
 #SBATCH --error=$(job_dir)/%j.err
-# #SBATCH --mail-user=email@email.gov
-# #SBATCH --mail-type=ALL
+#SBATCH --mail-user=romanlee@lbl.gov
+#SBATCH --mail-type=ALL
 
 source /global/common/software/nersc9/julia/scripts/activate_beta.sh
 ml load julia/1.11.7
