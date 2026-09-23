@@ -196,12 +196,13 @@ function loop_with_dt!(model, Ninner, Δt)
     return nothing
 end
 
-# compile_options = CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all)
-# uncomment to turn communication optimizations off
-# Note: may need to also increase xla timeout to get this to run, eg:
-# # export XLA_FLAGS="--xla_gpu_first_collective_call_warn_stuck_timeout_seconds=100 --xla_gpu_first_collective_call_terminate_timeout_seconds=300 \${XLA_FLAGS}"
-compile_options = CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all, 
-                                 xla_debug_options=(xla_enable_enzyme_comms_opt=false,), optimize_communications=false)
+comms_opt = get(ENV, "GB25_COMMS_OPT", "off")
+compile_options = if comms_opt == "on"
+    CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all)
+else
+    CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all, 
+                     xla_debug_options=(xla_enable_enzyme_comms_opt=false,), optimize_communications=false)
+end
 
 profile_dir = joinpath(@__DIR__, "profiling", jobid_procid)
 
@@ -257,8 +258,18 @@ output_slices = vcat(
 # local_nan_check(rank, "after first loop", model)
 
 # ─── Phase 2: Second loop — 64 steps at Δt=0.01 ─────────────────────
-@info "[$rank] Phase 2: second loop (64 steps, Δt=0.01)" now(UTC)
-@time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
+profiler = get(ENV, "PROFILER", get(ENV, "GB25_PROFILER", ""))
+if profiler == "xprof" || get(ENV, "GB25_XPROF", "false") == "true"
+    Reactant.with_profiler(joinpath(profile_dir, "second_loop")) do
+        @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
+    end
+elseif profiler == "nsys" || get(ENV, "GB25_NSYS", "false") == "true"
+    CUDA.@profile external=true begin
+        @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
+    end
+else
+    @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
+end
 
 # # ─── Phase 3: 8 warmup blocks × 256 steps (4×64) at Δt=0.01, with saves
 # const Nwarmup = 8
