@@ -23,7 +23,9 @@ function vista_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir, Ngpu
                                  resolution_fraction, project_path, run_file,
                                  comm::String)
 
-    x, y, z = (512, 512, 64)
+    # x, y, z = (512, 512, 64)
+    # x, y, z = (768, 768, 64)
+    x, y, z = (896, 896, 64)
     account_directive = isempty(cfg.account) ? "" : "#SBATCH --account=$(cfg.account)"
 
     """
