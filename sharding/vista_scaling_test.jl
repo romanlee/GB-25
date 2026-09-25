@@ -61,6 +61,7 @@ export JULIA_CUDA_USE_COMPAT=false
 export JULIA_CPU_TARGET=generic
 export NCCL_IB_DISABLE=0
 export NCCL_BUFFSIZE=33554432
+export XLA_REACTANT_GPU_MEM_FRACTION=0.7
 
 export REACTANT_GPU=cuda
 export REACTANT_GPU_VERSION=13.1
@@ -86,6 +87,7 @@ ibrun -n $(Nnodes) $(job_dir)/launcher.sh \\
         export SLURM_NTASKS_PER_NODE=1
         export SLURM_PROCID="\${OMPI_COMM_WORLD_RANK}"
         export SLURM_LOCALID="\${OMPI_COMM_WORLD_LOCAL_RANK}"
+        export XLA_REACTANT_GPU_MEM_FRACTION=0.7
         exec "\$@"
     ' sh \\
     $(Base.julia_cmd()[1]) --project=$(project_path) --startup-file=no \\

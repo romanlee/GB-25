@@ -138,7 +138,7 @@ export XLA_FLAGS="--xla_gpu_first_collective_call_warn_stuck_timeout_seconds=150
 export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_to=$(job_dir)/xla_dump \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_hlo_pass_re=.* \${XLA_FLAGS}"
-export XLA_REACTANT_GPU_MEM_FRACTION=0.9
+export XLA_REACTANT_GPU_MEM_FRACTION=\${XLA_REACTANT_GPU_MEM_FRACTION:-0.9}
 
 # Important else XLA might hang indefinitely
 unset no_proxy http_proxy https_proxy NO_PROXY HTTP_PROXY HTTPS_PROXY
