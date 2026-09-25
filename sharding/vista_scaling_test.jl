@@ -5,7 +5,7 @@ queue = "gh-dev"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 nccl_root = "/home1/apps/nvidia/Linux_aarch64/26.3/comm_libs/13.1/nccl"
 
-submit   = true
+submit   = false
 run_name = "r_react_vista_"
 time     = "00:40:00"
 Ngpus      = [2, 4, 8]
