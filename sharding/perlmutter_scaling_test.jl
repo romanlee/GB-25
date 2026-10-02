@@ -21,17 +21,20 @@ Ngpus     = [4, 8, 32, 72, 128, 288, 512, 968, 2048, 6136]
 Ngpus     = [6136]
 Ngpus     = [4]
 Ngpus     = [4, 8, 32, 72, 128]
+Ngpus     = [2, 4, 8]
+comms_opts = ["off", "on"]
 
 type     = "weak"
 
 gpus_per_node = 4
 cpus_per_task = 16
 
-perlmutter_config = JobConfig(; username, account, out_dir, time, cpus_per_task, Ngpus,
+perlmutter_config = JobConfig(; username, account, out_dir, time, cpus_per_task, Ngpus, comms_opts,
                               run_name, gpus_per_node, type, submit)
 
 function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir, Ngpu,
-                                      resolution_fraction, project_path, run_file)
+                                      resolution_fraction, project_path, run_file,
+                                      comm::String)
 
     # # grid sizes for sharded_baroclinic_instability_simulation_run.jl
     # x, y = (256,256) # fits easily
@@ -85,9 +88,18 @@ export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
 
-srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \
-    $(job_dir)/launcher.sh \
-    $(Base.julia_cmd()[1]) --project=$(project_path) --compiled-modules=strict -O0 \
+export GB25_COMMS_OPT=$(comm)
+
+if [ "\${PROFILER:-}" = "nsys" ]; then
+    OPENSSL_LIB="\${GB25_OPENSSL_LIB:-\$(find "\${PERLMUTTER_DEPOT:-\${SCRATCH:-}/GB25/perlmutter-2026-07-16-depot}/artifacts" -maxdepth 3 -name 'libcrypto.so.3' -print -quit 2>/dev/null)}"
+    PROFILER_CMD="nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{SLURM_PROCID} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys \${OPENSSL_LIB:+LD_PRELOAD=\${OPENSSL_LIB}:\${LD_PRELOAD}}"
+elif [ "\${PROFILER:-}" = "xprof" ]; then
+    export GB25_XPROF=true
+fi
+
+srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
+    \${PROFILER_CMD} $(job_dir)/launcher.sh \\
+    $(Base.julia_cmd()[1]) --project=$(project_path) --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)
 """
 end
