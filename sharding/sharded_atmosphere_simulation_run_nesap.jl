@@ -93,22 +93,23 @@ column_height = 30e3   # m; default column height in moist_baroclinic_wave_model
 # and `interpolate!` scatters into the sharded target.
 # Falls back to analytic IC if the file is missing.
 
-_ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
-                    "cascade_checkpoint.jld2")
 # _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
-#                     "quarter_deg_day1_cloud_tau30.jld2")
-# _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
-#                     "atmosphere_coarsened_1536x768x64.jld2")
-# _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
-#                     "atmosphere_no_microphysics_1deg_14day.jld2")
-initial_conditions_path = isfile(_ic_path) ? _ic_path : nothing
+#                     "cascade_checkpoint.jld2")
+# # _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
+# #                     "quarter_deg_day1_cloud_tau30.jld2")
+# # _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
+# #                     "atmosphere_coarsened_1536x768x64.jld2")
+# # _ic_path = joinpath(pkgdir(GordonBell25), "simulations", "initial_conditions",
+# #                     "atmosphere_no_microphysics_1deg_14day.jld2")
+# initial_conditions_path = isfile(_ic_path) ? _ic_path : nothing
 
-if initial_conditions_path !== nothing
-    @info "[$rank] Initializing from file" initial_conditions_path
-else
-    @warn "[$rank] IC file not found at $_ic_path — using analytic IC"
-end
-# initial_conditions_path = nothing
+# if initial_conditions_path !== nothing
+#     @info "[$rank] Initializing from file" initial_conditions_path
+# else
+#     @warn "[$rank] IC file not found at $_ic_path — using analytic IC"
+# end
+
+initial_conditions_path = nothing
 
 # ─── NaN check helper ─────────────────────────────────────────────────
 function local_nan_check(rank, label, model)
@@ -158,7 +159,7 @@ model = GordonBell25.moist_baroclinic_wave_model(arch; Nλ, Nφ, Nz, H=column_he
 
 @show model
 
-local_nan_check(rank, "after generating model", model)
+# local_nan_check(rank, "after generating model", model)
 
 Ninner = 64
 
@@ -195,7 +196,13 @@ function loop_with_dt!(model, Ninner, Δt)
     return nothing
 end
 
-compile_options = CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all)
+comms_opt = get(ENV, "GB25_COMMS_OPT", "off")
+compile_options = if comms_opt == "on"
+    CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all)
+else
+    CompileOptions(; sync=true, raise=true, strip_llvm_debuginfo=true, strip=:all, 
+                     xla_debug_options=(xla_enable_enzyme_comms_opt=false,), optimize_communications=false)
+end
 
 profile_dir = joinpath(@__DIR__, "profiling", jobid_procid)
 
@@ -241,85 +248,95 @@ output_slices = vcat(
     [(f, :yz, yz_index)  for f in yz_fields],
 )
 
-output_dir = joinpath(@__DIR__, "output", jobid_procid)
-mkpath(output_dir)
+# output_dir = joinpath(@__DIR__, "output", jobid_procid)
+# mkpath(output_dir)
 
 # ─── Phase 1: First loop — 64 steps at Δt=0.01 ──────────────────────
 @info "[$rank] Phase 1: first loop (64 steps, Δt=0.01)" now(UTC)
 @time "[$rank] first loop" compiled_loop!(model, Ninner, Δt_r)
 
-local_nan_check(rank, "after first loop", model)
+# local_nan_check(rank, "after first loop", model)
 
 # ─── Phase 2: Second loop — 64 steps at Δt=0.01 ─────────────────────
-@info "[$rank] Phase 2: second loop (64 steps, Δt=0.01)" now(UTC)
-@time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
-
-# ─── Phase 3: 8 warmup blocks × 256 steps (4×64) at Δt=0.01, with saves
-const Nwarmup = 8
-# const Ncalls_per_block_warmup = 4   # 4 × 64 = 256 steps per block
-const Ncalls_per_block_warmup = 8
-
-@info "[$rank] Phase 3: $Nwarmup warmup blocks × $(Ncalls_per_block_warmup*64) steps (Δt=0.01)" now(UTC)
-wall_start = time_ns()
-for k in 1:Nwarmup
-    t0 = time_ns()
-    for _ in 1:Ncalls_per_block_warmup
-        compiled_loop!(model, Ninner, Δt_r)
+profiler = get(ENV, "PROFILER", get(ENV, "GB25_PROFILER", ""))
+if profiler == "xprof" || get(ENV, "GB25_XPROF", "false") == "true"
+    Reactant.with_profiler(joinpath(profile_dir, "second_loop")) do
+        @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
     end
-    wall_block = (time_ns() - t0) / 1e9
-    sim_time   = Ncalls_per_block_warmup * 64 * k * Δt
-    total_wall = (time_ns() - wall_start) / 1e9
-
-    @info @sprintf("[%d] warmup %d/%d  wall=%.1fs  sim=%.1fs  total_wall=%.0fs",
-                    rank, k, Nwarmup, wall_block, sim_time, total_wall)
-
-    block_dir = joinpath(output_dir, @sprintf("warmup_%04d", k))
-    @time "[$rank] save warmup $k" begin
-        GordonBell25.save_model_state(block_dir, model, arch;
-            label = "output", slices = output_slices)
+elseif profiler == "nsys" || get(ENV, "GB25_NSYS", "false") == "true"
+    CUDA.@profile external=true begin
+        @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
     end
-    @info "[$rank] saved warmup $k" block_dir
-    flush(stderr); flush(stdout)
+else
+    @time "[$rank] second loop" compiled_loop!(model, Ninner, Δt_r)
 end
 
-local_nan_check(rank, "after warmup (8 blocks)", model)
+# # ─── Phase 3: 8 warmup blocks × 256 steps (4×64) at Δt=0.01, with saves
+# const Nwarmup = 8
+# # const Ncalls_per_block_warmup = 4   # 4 × 64 = 256 steps per block
+# const Ncalls_per_block_warmup = 8
 
-# ─── Phase 4: Ramp Δt to 0.05, long production run ───────────────────
-Δt_r = make_dt(0.05, local_arch, arch, Ndev)
-@info "[$rank] Phase 4: bumped Δt to 0.05 (no recompile)" now(UTC)
+# @info "[$rank] Phase 3: $Nwarmup warmup blocks × $(Ncalls_per_block_warmup*64) steps (Δt=0.01)" now(UTC)
+# wall_start = time_ns()
+# for k in 1:Nwarmup
+#     t0 = time_ns()
+#     for _ in 1:Ncalls_per_block_warmup
+#         compiled_loop!(model, Ninner, Δt_r)
+#     end
+#     wall_block = (time_ns() - t0) / 1e9
+#     sim_time   = Ncalls_per_block_warmup * 64 * k * Δt
+#     total_wall = (time_ns() - wall_start) / 1e9
 
-const Nouter = 2000
-const Ncalls_per_block = 4   # 4 × 64 = 256 steps per block
-steps_per_block = Ncalls_per_block * 64
+#     @info @sprintf("[%d] warmup %d/%d  wall=%.1fs  sim=%.1fs  total_wall=%.0fs",
+#                     rank, k, Nwarmup, wall_block, sim_time, total_wall)
 
-@info "[$rank] Starting production: $Nouter blocks × $steps_per_block steps (Δt=0.05)" now(UTC)
+#     block_dir = joinpath(output_dir, @sprintf("warmup_%04d", k))
+#     @time "[$rank] save warmup $k" begin
+#         GordonBell25.save_model_state(block_dir, model, arch;
+#             label = "output", slices = output_slices)
+#     end
+#     @info "[$rank] saved warmup $k" block_dir
+#     flush(stderr); flush(stdout)
+# end
 
-wall_start = time_ns()
-for k in 1:Nouter
-    t0 = time_ns()
-    for _ in 1:Ncalls_per_block
-        compiled_loop!(model, Ninner, Δt_r)
-    end
-    wall_block = (time_ns() - t0) / 1e9
-    sim_time   = steps_per_block * k * 0.05
-    total_wall = (time_ns() - wall_start) / 1e9
-    sypd       = (steps_per_block * 0.05) / (365.25 * 86400 * wall_block) * 365.25
+# # local_nan_check(rank, "after warmup (8 blocks)", model)
 
-    @info @sprintf("[%d] block %d/%d  wall=%.1fs  sim=%.1fs  SYPD=%.5f  total_wall=%.0fs",
-                    rank, k, Nouter, wall_block, sim_time, sypd, total_wall)
+# # ─── Phase 4: Ramp Δt to 0.05, long production run ───────────────────
+# Δt_r = make_dt(0.05, local_arch, arch, Ndev)
+# @info "[$rank] Phase 4: bumped Δt to 0.05 (no recompile)" now(UTC)
 
-    block_dir = joinpath(output_dir, @sprintf("block_%04d", k))
-    @time "[$rank] save block $k" begin
-        GordonBell25.save_model_state(block_dir, model, arch;
-            label = "output", slices = output_slices)
-    end
-    @info "[$rank] saved block $k" block_dir
+# const Nouter = 2000
+# const Ncalls_per_block = 4   # 4 × 64 = 256 steps per block
+# steps_per_block = Ncalls_per_block * 64
 
-    if k % 8 == 0
-        local_nan_check(rank, "block $k", model)
-    end
+# @info "[$rank] Starting production: $Nouter blocks × $steps_per_block steps (Δt=0.05)" now(UTC)
 
-    flush(stderr); flush(stdout)
-end
+# wall_start = time_ns()
+# for k in 1:Nouter
+#     t0 = time_ns()
+#     for _ in 1:Ncalls_per_block
+#         compiled_loop!(model, Ninner, Δt_r)
+#     end
+#     wall_block = (time_ns() - t0) / 1e9
+#     sim_time   = steps_per_block * k * 0.05
+#     total_wall = (time_ns() - wall_start) / 1e9
+#     sypd       = (steps_per_block * 0.05) / (365.25 * 86400 * wall_block) * 365.25
+
+#     @info @sprintf("[%d] block %d/%d  wall=%.1fs  sim=%.1fs  SYPD=%.5f  total_wall=%.0fs",
+#                     rank, k, Nouter, wall_block, sim_time, sypd, total_wall)
+
+#     block_dir = joinpath(output_dir, @sprintf("block_%04d", k))
+#     @time "[$rank] save block $k" begin
+#         GordonBell25.save_model_state(block_dir, model, arch;
+#             label = "output", slices = output_slices)
+#     end
+#     @info "[$rank] saved block $k" block_dir
+
+#     if k % 8 == 0
+#         local_nan_check(rank, "block $k", model)
+#     end
+
+#     flush(stderr); flush(stdout)
+# end
 
 @info "[$rank] Done!" now(UTC)
