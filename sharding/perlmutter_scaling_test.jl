@@ -60,7 +60,7 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
 #SBATCH --account=$(cfg.account)
 #SBATCH --output=$(job_dir)/%j.out
 #SBATCH --error=$(job_dir)/%j.err
-#SBATCH --mail-user=romanlee@lbl.gov
+#SBATCH --mail-user=email@solidcompany.com
 #SBATCH --mail-type=ALL
 
 source /global/common/software/nersc9/julia/scripts/activate_beta.sh
