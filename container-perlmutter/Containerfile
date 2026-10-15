@@ -1,0 +1,87 @@
+# syntax=docker/dockerfile:1
+ARG BASE_IMAGE=docker.io/nvidia/cuda:13.1.0-base-ubuntu24.04
+FROM ${BASE_IMAGE}
+
+ARG JULIA_VERSION=1.11.9
+ARG GDRCOPY_VERSION=2.4.4
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install user-space fabric dependencies, CUDA driver stub, and Nsight Systems CLI.
+# CUDA 13.1 runtime, NCCL (libnccl.so.2), and MPI JLLs are provided directly by
+# Julia's CUDA_Runtime_jll, Reactant_jll, and MPICH_jll artifacts.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        wget \
+        autoconf \
+        libtool \
+        build-essential \
+        pkg-config \
+        libhwloc-dev \
+        libibverbs-dev \
+        ibverbs-providers \
+        cuda-driver-dev-13-1 \
+        cuda-nsight-systems-13-1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build and install NVIDIA gdrcopy user-space library (libgdrapi.so), then remove
+# /etc/ld.so.conf.d/cuda*.conf so CUDA_Runtime_jll libraries are not shadowed by /usr/local/cuda.
+RUN git clone --depth=1 -b v${GDRCOPY_VERSION} https://github.com/NVIDIA/gdrcopy.git /tmp/gdrcopy && \
+    make -C /tmp/gdrcopy CC=gcc CUDA=/usr/local/cuda lib lib_install && \
+    rm -f /etc/ld.so.conf.d/cuda*.conf && \
+    ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
+    ldconfig && \
+    rm -rf /tmp/gdrcopy
+
+# Install official Julia binary (x86_64)
+RUN mkdir -p /usr/local/julia && \
+    curl -fsSL "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
+        | tar -xz -C /usr/local/julia --strip-components=1
+ENV PATH="/usr/local/julia/bin:/usr/local/cuda/bin:${PATH}"
+
+# Configure Julia and Reactant environment inside the image
+ENV JULIA_DEPOT_PATH="/usr/local/share/julia_depot"
+ENV JULIA_CPU_TARGET="generic"
+ENV JULIA_CUDA_MEMORY_POOL="none"
+ENV JULIA_CUDA_USE_COMPAT="false"
+ENV REACTANT_GPU="cuda"
+ENV REACTANT_GPU_VERSION="13.1"
+
+# Copy GB-25 environment manifests first so package/artifact downloads are cached in their own layer
+WORKDIR /opt/gb25
+COPY Project.toml /opt/gb25/Project.toml
+COPY container-perlmutter/Manifest.toml /opt/gb25/Manifest.toml
+COPY container-perlmutter/LocalPreferences.toml /opt/gb25/LocalPreferences.toml
+COPY Project.toml /usr/local/share/julia_depot/environments/v1.11/Project.toml
+COPY container-perlmutter/LocalPreferences.toml /usr/local/share/julia_depot/environments/v1.11/LocalPreferences.toml
+
+# Download all packages and JLL artifacts and set read permissions within the same layer
+# to avoid OverlayFS copy-up duplication of the 6 GB artifacts directory in later layers.
+RUN OPENBLAS_NUM_THREADS=1 \
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
+    julia --startup-file=no --project=/opt/gb25 -O0 \
+        -e 'using Pkg; Pkg.instantiate(; allow_autoprecomp=false)' && \
+    chmod -R a+rX /usr/local/share/julia_depot
+
+# Copy GB-25 source code
+COPY src /opt/gb25/src
+COPY sharding /opt/gb25/sharding
+COPY simulations /opt/gb25/simulations
+
+# Precompile at -O0 so runtime `--compiled-modules=strict -O0` hits 100% of pkgimages.
+# Use CUDA driver stubs only during image build (when no host GPU driver is mounted).
+RUN OPENBLAS_NUM_THREADS=1 \
+    JULIA_NUM_PRECOMPILE_TASKS=8 \
+    JULIA_IMAGE_THREADS=8 \
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
+    julia --startup-file=no --project=/opt/gb25 -O0 \
+        -e 'using Pkg; Pkg.precompile()' && \
+    OPENBLAS_NUM_THREADS=1 \
+    LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
+    julia --startup-file=no --project=/opt/gb25 --compiled-modules=strict -O0 \
+        -e 'using GordonBell25' && \
+    chmod -R a+rX /usr/local/share/julia_depot/compiled /usr/local/share/julia_depot/logs /opt/gb25
