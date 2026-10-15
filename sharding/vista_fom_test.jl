@@ -61,7 +61,6 @@ export TACC_TASKS_PER_NODE=1
 export XLA_FLAGS="--xla_gpu_shard_autotuning=false \${XLA_FLAGS:-}"
 
 export GB25_COMMS_OPT=$(comm)
-CONTAINER_IMAGE="\${GB25_CONTAINER_IMAGE:-$(out_dir)/gb25_vista.sif}"
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
     PROFILER_CMD="nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{OMPI_COMM_WORLD_RANK} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
@@ -71,7 +70,7 @@ fi
 
 ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
     -B "\${SCRATCH}:\${SCRATCH}" \\
-    "\${CONTAINER_IMAGE}" \\
+    $(out_dir)/gb25_vista.sif \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
         export SLURM_STEP_NODELIST="\${SLURM_JOB_NODELIST}"
@@ -85,7 +84,7 @@ ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
         export XLA_REACTANT_GPU_MEM_FRACTION=0.8
         exec "\$@"
     ' sh \\
-    $(Base.julia_cmd()[1]) --project=/opt/gb25 --startup-file=no \\
+    /usr/local/julia/bin/julia --project=/opt/gb25 --startup-file=no \\
     --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)
 """

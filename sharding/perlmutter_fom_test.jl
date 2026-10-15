@@ -27,10 +27,8 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
                                       resolution_fraction, project_path, run_file,
                                       comm::String)
 
-    # grid sizes for sharded_atmosphere_simulation_run.jl
-    x, y, z = (512, 512, 64) # per-GPU size for 1°-IC Reactant test
+    x, y, z = (512, 512, 64)
 
-#SBATCH -q premium
                 """
 #!/bin/bash -l
 
@@ -52,15 +50,10 @@ export JULIA_CUDA_MEMORY_POOL=none
 
 export FI_CXI_RDZV_GET_MIN=0
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
-# export MPICH_SMP_SINGLE_COPY_MODE=NONE
-# export NCCL_DEBUG=INFO
-# export FI_MR_CACHE_MONITOR=kdreg2
-# export MPICH_GPU_SUPPORT_ENABLED=0
 export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
 
 export GB25_COMMS_OPT=$(comm)
-CONTAINER_IMAGE="\${GB25_CONTAINER_IMAGE:-registry.gitlab.com/nersc/nesap/reactantanigans/gb25:perlmutter}"
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
     PROFILER_CMD="nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{SLURM_PROCID} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
@@ -72,9 +65,9 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     podman-hpc run --rm --gpu --nccl \\
     --net=host --ipc=host --pid=host --env-host \\
     -v "\${SCRATCH}:\${SCRATCH}" \\
-    "\${CONTAINER_IMAGE}" \\
+    registry.gitlab.com/nersc/nesap/reactantanigans/gb25:perlmutter \\
     $(job_dir)/launcher.sh \${PROFILER_CMD} \\
-    $(Base.julia_cmd()[1]) --project=/opt/gb25 --compiled-modules=strict -O0 \\
+    /usr/local/julia/bin/julia --project=/opt/gb25 --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)
 """
 end
