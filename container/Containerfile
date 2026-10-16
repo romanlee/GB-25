@@ -44,10 +44,9 @@ ENV JULIA_CUDA_USE_COMPAT="false"
 ENV REACTANT_GPU="cuda"
 ENV REACTANT_GPU_VERSION="13.1"
 
-# Copy GB-25 environment manifests first so package/artifact downloads are cached in their own layer
+# Copy GB-25 project definition first so package/artifact downloads are cached in their own layer
 WORKDIR /opt/gb25
 COPY Project.toml /opt/gb25/Project.toml
-COPY container/Manifest.toml /opt/gb25/Manifest.toml
 COPY container/LocalPreferences.toml /opt/gb25/LocalPreferences.toml
 COPY Project.toml /usr/local/share/julia_depot/environments/v1.11/Project.toml
 COPY container/LocalPreferences.toml /usr/local/share/julia_depot/environments/v1.11/LocalPreferences.toml
