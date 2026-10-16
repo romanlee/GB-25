@@ -3,8 +3,8 @@ variable "REGISTRY_IMAGE" {
 }
 
 target "default" {
-  context    = ".."
+  context    = "."
   dockerfile = "container/Containerfile"
-  platforms  = ["linux/amd64", "linux/arm64"]
   tags       = ["${REGISTRY_IMAGE}:latest"]
+  output     = ["type=docker"]
 }
