@@ -1,9 +1,6 @@
 include("common_submission_generator.jl")
 
-account = "m4672"
-account = "m5096"
-account = "m5176"
-
+account = get(ENV, "PERLMUTTER_ACCOUNT", "m5176")
 queue = "regular"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
@@ -28,6 +25,7 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
                                       comm::String)
 
     x, y, z = (512, 512, 64)
+    image = get(ENV, "GB25_IMAGE", "ghcr.io/prontolab/gb-25:latest")
 
                 """
 #!/bin/bash -l
@@ -41,8 +39,6 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
 #SBATCH --account=$(cfg.account)
 #SBATCH --output=$(job_dir)/%j.out
 #SBATCH --error=$(job_dir)/%j.err
-#SBATCH --mail-user=email@solidcompany.com
-#SBATCH --mail-type=ALL
 
 export SBATCH_ACCOUNT=$(cfg.account)
 export SALLOC_ACCOUNT=$(cfg.account)
@@ -65,7 +61,7 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     podman-hpc run --rm --gpu --nccl \\
     --net=host --ipc=host --pid=host --env-host \\
     -v "\${SCRATCH}:\${SCRATCH}" \\
-    registry.gitlab.com/nersc/nesap/reactantanigans/gb25:perlmutter \\
+    $(image) \\
     $(job_dir)/launcher.sh \${PROFILER_CMD} \\
     /usr/local/julia/bin/julia --project=/opt/gb25 --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)

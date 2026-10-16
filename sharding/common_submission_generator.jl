@@ -64,27 +64,29 @@ function generate_and_submit(submit_job_writer, cfg::JobConfig; caller_file::Str
 
     # Copy environment files and run files for future reference.
     for filename in ("Project.toml", manifest_file, "LocalPreferences.toml")
-        if filename == "LocalPreferences.toml" && !isfile(joinpath("..", filename))
+        if filename == "LocalPreferences.toml" && !isfile(joinpath(project_path, filename))
             continue
         end
-        cp(joinpath("..", filename), joinpath(out_path, filename))
+        cp(joinpath(project_path, filename), joinpath(out_path, filename))
     end
     run_file = joinpath(out_path, basename(input_file))
     cp(input_file, run_file)
 
     # Capture repository state
-    git_describe = readchomp(`git -C $(project_path) --no-pager describe --tags --always --dirty`)
-    git_branch = readchomp(`git -C $(project_path) rev-parse --abbrev-ref HEAD`)
-    git_diff = read(`git -C $(project_path) --no-pager diff --no-ext-diff HEAD`, String)
-    open(joinpath(out_path, "run-info.toml"), "w") do io
-        print(io, """
+    if ispath(joinpath(project_path, ".git"))
+        git_describe = readchomp(`git -C $(project_path) --no-pager describe --tags --always --dirty`)
+        git_branch = readchomp(`git -C $(project_path) rev-parse --abbrev-ref HEAD`)
+        git_diff = read(`git -C $(project_path) --no-pager diff --no-ext-diff HEAD`, String)
+        open(joinpath(out_path, "run-info.toml"), "w") do io
+            print(io, """
 git_describe = "$(git_describe)"
 git_branch = "$(git_branch)"
 """)
-    end
-    if !isempty(git_diff)
-        open(joinpath(out_path, "git.diff"), "w") do io
-            print(io, git_diff)
+        end
+        if !isempty(git_diff)
+            open(joinpath(out_path, "git.diff"), "w") do io
+                print(io, git_diff)
+            end
         end
     end
 
@@ -157,8 +159,12 @@ echo "[\${SLURM_JOB_ID}.\${SLURM_PROCID}] Process exited with code \${?}"
                                             comm::String))
             end
             if cfg.submit
-                run(`sbatch $(sbatch_name)`)
-                run(`squeue -u $(cfg.username)`)
+                if !isnothing(Sys.which("sbatch"))
+                    run(`sbatch $(sbatch_name)`)
+                    run(`squeue -u $(cfg.username)`)
+                else
+                    println(sbatch_name)
+                end
             else
                 @warn "job not submitted"
             end

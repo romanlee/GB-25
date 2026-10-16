@@ -81,7 +81,6 @@ ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
         export SLURM_NTASKS_PER_NODE=1
         export SLURM_PROCID="\${OMPI_COMM_WORLD_RANK}"
         export SLURM_LOCALID="\${OMPI_COMM_WORLD_LOCAL_RANK}"
-        export XLA_REACTANT_GPU_MEM_FRACTION=0.8
         exec "\$@"
     ' sh \\
     /usr/local/julia/bin/julia --project=/opt/gb25 --startup-file=no \\
