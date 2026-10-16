@@ -1,6 +1,6 @@
 # Container (`GB-25`)
 
-Single multi-architecture (`linux/amd64`, `linux/arm64`) [`Containerfile`](Containerfile) published as `ghcr.io/prontolab/gb-25:latest`.
+Single multi-architecture (`linux/amd64`, `linux/arm64`) [`Containerfile`](Containerfile) published as `ghcr.io/prontolab/gb-25`.
 
 ## Build & Push
 

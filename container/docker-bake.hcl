@@ -5,6 +5,5 @@ variable "REGISTRY_IMAGE" {
 target "default" {
   context    = "."
   dockerfile = "container/Containerfile"
-  tags       = ["${REGISTRY_IMAGE}:latest"]
-  output     = ["type=docker"]
+  output     = ["type=docker,name=${REGISTRY_IMAGE}"]
 }

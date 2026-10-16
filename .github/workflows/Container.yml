@@ -91,6 +91,6 @@ jobs:
           IMAGE="${REGISTRY_IMAGE,,}"
           DIGEST_AMD64="$(cat /tmp/digests/digest-amd64)"
           DIGEST_ARM64="$(cat /tmp/digests/digest-arm64)"
-          docker buildx imagetools create -t "${IMAGE}:latest" \
+          docker buildx imagetools create -t "${IMAGE}" \
             "${IMAGE}@${DIGEST_AMD64}" \
             "${IMAGE}@${DIGEST_ARM64}"
