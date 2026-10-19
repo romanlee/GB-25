@@ -39,6 +39,8 @@ ENV PATH="/usr/local/julia/bin:/usr/local/cuda/bin:${PATH}"
 # Configure Julia and Reactant environment inside the image
 ENV JULIA_DEPOT_PATH="/usr/local/share/julia_depot"
 ENV JULIA_CPU_TARGET="generic"
+ENV JULIA_LLVM_ARGS="-global-isel=0"
+ENV JULIA_PKG_PRECOMPILE_AUTO="0"
 ENV JULIA_CUDA_MEMORY_POOL="none"
 ENV JULIA_CUDA_USE_COMPAT="false"
 ENV REACTANT_GPU="cuda"
@@ -47,21 +49,18 @@ ENV REACTANT_GPU_VERSION="13.1"
 # Copy GB-25 project definition first so package/artifact downloads are cached in their own layer
 WORKDIR /opt/gb25
 COPY Project.toml /opt/gb25/Project.toml
+COPY container/Manifest.toml /opt/gb25/Manifest.toml
 COPY container/LocalPreferences.toml /opt/gb25/LocalPreferences.toml
 COPY Project.toml /usr/local/share/julia_depot/environments/v1.11/Project.toml
+COPY container/Manifest.toml /usr/local/share/julia_depot/environments/v1.11/Manifest.toml
 COPY container/LocalPreferences.toml /usr/local/share/julia_depot/environments/v1.11/LocalPreferences.toml
 
 # Download all packages and JLL artifacts and set read permissions within the same layer
 # to avoid OverlayFS copy-up duplication of the 6 GB artifacts directory in later layers.
-# Also patch aarch64 libReactantExtra.so in-place to redirect the undefined aarch64 cuFFT
-# separate_callback.cu stub symbol (..._4817d27c_3513083) to the defined x86_64 stub
-# (..._a85cd5ea_29231) from API.cpp (EnzymeAD/Reactant.jl#3112).
 RUN OPENBLAS_NUM_THREADS=1 \
     LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
-    julia --startup-file=no --project=/opt/gb25 -O0 \
-        -e 'using Pkg; Pkg.instantiate(; allow_autoprecomp=false)' && \
-    chmod -R u+w,a+rX /usr/local/share/julia_depot && \
-    LC_ALL=C sed -i 's/separate_callback_cu_4817d27c_3513083/separate_callback_cu_a85cd5ea_29231\x00\x00/g' /usr/local/share/julia_depot/artifacts/*/lib/libReactantExtra.so
+    julia --startup-file=no --project=/opt/gb25 -e 'using Pkg; Pkg.instantiate()' && \
+    chmod -R u+w,a+rX /usr/local/share/julia_depot
 
 # Copy GB-25 source code
 COPY src /opt/gb25/src
