@@ -2,7 +2,7 @@
 
 julia_version = "1.11.9"
 manifest_format = "2.0"
-project_hash = "352bbd1c767f37dcaaeb4883c55568f697b38b52"
+project_hash = "e09e3ee2aa7bd9261d9111c4098a97dbae4bf248"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -158,9 +158,9 @@ version = "1.21.7+0"
 
 [[deps.Breeze]]
 deps = ["Adapt", "Dates", "DocStringExtensions", "GPUArraysCore", "InteractiveUtils", "JLD2", "KernelAbstractions", "Oceananigans", "Printf", "Statistics"]
-git-tree-sha1 = "dc95f292e1082f078a39ea8b2e825427894071df"
+git-tree-sha1 = "7b8ce0424ae940ca111e1c3f55dd1f52be0d38fb"
 uuid = "660aa2fb-d4c8-4359-a52c-9c057bc511da"
-version = "0.4.7"
+version = "0.7.4"
 
     [deps.Breeze.extensions]
     BreezeCloudMicrophysicsExt = ["CloudMicrophysics", "SpecialFunctions"]
@@ -274,10 +274,10 @@ uuid = "5c42b081-d73a-476f-9059-fd94b934656c"
 version = "1.1.17"
 
 [[deps.ClimaSeaIce]]
-deps = ["Adapt", "JLD2", "KernelAbstractions", "Oceananigans", "RootSolvers", "Roots", "SeawaterPolynomials"]
-git-tree-sha1 = "a4cb5ae733db031a1e7de297faf050032e413751"
+deps = ["Adapt", "JLD2", "KernelAbstractions", "Oceananigans", "RootSolvers", "SeawaterPolynomials"]
+git-tree-sha1 = "6b5a917e4d543f7245fc0ff020fb54c0fabbfd49"
 uuid = "6ba0ff68-24e6-4315-936c-2e99227c95a4"
-version = "0.4.5"
+version = "0.5.9"
 
 [[deps.CloseOpenIntervals]]
 deps = ["Static", "StaticArrayInterface"]
@@ -286,10 +286,10 @@ uuid = "fb6a15b2-703c-40df-9091-08a04967cfa9"
 version = "0.1.13"
 
 [[deps.CloudMicrophysics]]
-deps = ["ClimaParams", "DocStringExtensions", "ForwardDiff", "LazyArtifacts", "LogExpFunctions", "RootSolvers", "SpecialFunctions", "StaticArrays", "Thermodynamics", "UnrolledUtilities"]
-git-tree-sha1 = "ffbcad4974b0be4ec5ff2746558d72d49496a517"
+deps = ["ClimaParams", "DocStringExtensions", "FastGaussQuadrature", "ForwardDiff", "InteractiveUtils", "LazyArtifacts", "LogExpFunctions", "RootSolvers", "SpecialFunctions", "StaticArrays", "Thermodynamics", "UnrolledUtilities"]
+git-tree-sha1 = "df0677f50e4ad62d521bea3ca35c72bbf92e3443"
 uuid = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
-version = "0.32.0"
+version = "0.37.1"
 
     [deps.CloudMicrophysics.extensions]
     EmulatorModelsExt = ["DataFrames", "MLJ"]
@@ -335,12 +335,6 @@ deps = ["CFTime", "DataStructures", "Dates", "DiskArrays", "Preferences", "Print
 git-tree-sha1 = "54d50f8a0a68ff4160564dfa09fc5de32465cfca"
 uuid = "1fbeeb36-5f17-413c-809b-666fb144f157"
 version = "0.4.4"
-
-[[deps.CommonSolve]]
-deps = ["PrecompileTools"]
-git-tree-sha1 = "6c389fa857f6ca5a95474b52a52023fd77f24cb7"
-uuid = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
-version = "0.2.14"
 
 [[deps.CommonSubexpressions]]
 deps = ["MacroTools"]
@@ -575,6 +569,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "6866aec60ef98e3164cd8d6855225684207e9dff"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.12+0"
+
+[[deps.FastGaussQuadrature]]
+deps = ["LinearAlgebra", "SpecialFunctions", "StaticArrays"]
+git-tree-sha1 = "4916117dd032ec5959b7633aedbbac408ca5ddeb"
+uuid = "442a2c76-b920-505d-bb47-c5924d526838"
+version = "1.3.0"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
@@ -1125,30 +1125,42 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
 
 [[deps.NumericalEarth]]
-deps = ["Adapt", "CFTime", "ClimaSeaIce", "DataDeps", "Dates", "DocStringExtensions", "Downloads", "GPUArraysCore", "Glob", "ImageMorphology", "JLD2", "KernelAbstractions", "MeshArrays", "NCDatasets", "Oceananigans", "OffsetArrays", "PrecompileTools", "Printf", "Scratch", "SeawaterPolynomials", "StaticArrays", "Statistics", "Thermodynamics", "ZipFile"]
-git-tree-sha1 = "91fb884b3d425cd0f7d24788e2e1ce314bc5226d"
+deps = ["Accessors", "Adapt", "CFTime", "ClimaSeaIce", "CubedSphere", "DataDeps", "Dates", "Distances", "DocStringExtensions", "Downloads", "GPUArraysCore", "Glob", "ImageMorphology", "JLD2", "KernelAbstractions", "LibCURL", "MeshArrays", "NCDatasets", "Oceananigans", "OffsetArrays", "PrecompileTools", "Printf", "Scratch", "SeawaterPolynomials", "StaticArrays", "Statistics", "Thermodynamics", "ZipFile"]
+git-tree-sha1 = "7f07b8657ac5d29bd6b71b5191c1529f505fd6ea"
 uuid = "904d977b-046a-4731-8b86-9235c0d1ef02"
-version = "0.2.3"
+version = "0.6.0"
 
     [deps.NumericalEarth.extensions]
+    NumericalEarthArchGDALExt = "ArchGDAL"
     NumericalEarthBreezeExt = "Breeze"
     NumericalEarthCDSAPIExt = "CDSAPI"
+    NumericalEarthCopernicusClimateDataStoreExt = "CopernicusClimateDataStore"
     NumericalEarthCopernicusMarineExt = "CopernicusMarine"
+    NumericalEarthMakieExt = "Makie"
+    NumericalEarthNaturalEarthExt = ["NaturalEarth", "GeoInterface"]
     NumericalEarthReactantExt = "Reactant"
-    NumericalEarthSpeedyWeatherExt = ["SpeedyWeather", "XESMF"]
+    NumericalEarthSpeedyWeatherExt = ["SpeedyWeather", "ConservativeRegridding"]
     NumericalEarthVerosExt = ["PythonCall", "CondaPkg"]
     NumericalEarthWOAExt = "WorldOceanAtlasTools"
+    NumericalEarthZarrExt = "Zarr"
 
     [deps.NumericalEarth.weakdeps]
+    ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
     Breeze = "660aa2fb-d4c8-4359-a52c-9c057bc511da"
     CDSAPI = "8a7b9de3-9c00-473e-88b4-7eccd7ef2fea"
     CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
+    ConservativeRegridding = "8e50ac2c-eb48-49bc-a402-07c87b949343"
+    CopernicusClimateDataStore = "bce3f73f-acea-4481-bd86-df89ecc2cb46"
     CopernicusMarine = "cd43e856-93a3-40c8-bc9e-6146cdce14fa"
+    GeoInterface = "cf35fbd7-0cd7-5166-be24-54bfbe79505f"
+    Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+    NaturalEarth = "436b0209-26ab-4e65-94a9-6526d86fea76"
     PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+    RRTMGP = "a01a1ee8-cea4-48fc-987c-fc7878d79da1"
     Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
     SpeedyWeather = "9e226e20-d153-4fed-8a5b-493def4f21a9"
     WorldOceanAtlasTools = "04f20302-f1b9-11e8-29d9-7d841cb0a64a"
-    XESMF = "2e0b0046-e7a1-486f-88de-807ee8ffabe5"
+    Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
 
 [[deps.ObjectFile]]
 deps = ["Reexport", "StructIO"]
@@ -1157,34 +1169,38 @@ uuid = "d8793406-e978-5875-9003-1fc021f44a92"
 version = "0.5.1"
 
 [[deps.Oceananigans]]
-deps = ["Adapt", "Crayons", "CubedSphere", "Dates", "Distances", "DocStringExtensions", "FFTW", "GPUArraysCore", "Glob", "InteractiveUtils", "JLD2", "KernelAbstractions", "Krylov", "LinearAlgebra", "Logging", "MPI", "MuladdMacro", "OffsetArrays", "OrderedCollections", "Pkg", "Printf", "ReactantCore", "Rotations", "SeawaterPolynomials", "SparseArrays", "StaticArrays", "Statistics", "StructArrays"]
-git-tree-sha1 = "cda79e6d7ed7de61316a314494ea93202345315b"
+deps = ["Adapt", "BFloat16s", "Crayons", "CubedSphere", "Dates", "Distances", "DocStringExtensions", "FFTW", "GPUArraysCore", "Glob", "InteractiveUtils", "JLD2", "KernelAbstractions", "Krylov", "LinearAlgebra", "Logging", "MPI", "MuladdMacro", "OffsetArrays", "OrderedCollections", "Pkg", "Printf", "ReactantCore", "Rotations", "SeawaterPolynomials", "SparseArrays", "StaticArrays", "Statistics", "StructArrays"]
+git-tree-sha1 = "8d086408038420797e5e531fb50e9750f23fa86f"
 uuid = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
-version = "0.106.6"
+version = "0.110.19"
 
     [deps.Oceananigans.extensions]
     OceananigansAMDGPUExt = ["AMDGPU", "AbstractFFTs"]
     OceananigansCUDAExt = ["CUDA", "GPUArrays", "GPUArraysCore"]
+    OceananigansConservativeRegriddingExt = "ConservativeRegridding"
     OceananigansEnzymeExt = "Enzyme"
     OceananigansMakieExt = "Makie"
-    OceananigansMetalExt = "Metal"
+    OceananigansMetalExt = ["Metal", "AbstractFFTs"]
+    OceananigansNCCLExt = ["NCCL", "CUDA"]
     OceananigansNCDatasetsExt = "NCDatasets"
     OceananigansOneAPIExt = "oneAPI"
     OceananigansReactantExt = ["Reactant", "KernelAbstractions", "ConstructionBase", "AbstractFFTs"]
-    OceananigansXESMFExt = ["XESMF"]
+    OceananigansZarrExt = "Zarr"
 
     [deps.Oceananigans.weakdeps]
     AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
     AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    ConservativeRegridding = "8e50ac2c-eb48-49bc-a402-07c87b949343"
     ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
     Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
     GPUArrays = "0c68f7d7-f131-5f86-a1c3-88cf8149b2d7"
     Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
     Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
+    NCCL = "3fe64909-d7a1-4096-9b7d-7a0f12cf0f6b"
     NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
     Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
-    XESMF = "2e0b0046-e7a1-486f-88de-807ee8ffabe5"
+    Zarr = "0a941bbe-ad1d-11e8-39d9-ab76183a1d99"
     oneAPI = "8f75cd03-7ff8-4ecb-9b8f-daf728133b1b"
 
 [[deps.OffsetArrays]]
@@ -1447,28 +1463,6 @@ deps = ["ForwardDiff", "Printf"]
 git-tree-sha1 = "d4c63e1165df602d9392b9dab37504dd97eaba71"
 uuid = "7181ea78-2dcb-4de3-ab41-2b8ab5a31e74"
 version = "1.1.0"
-
-[[deps.Roots]]
-deps = ["Accessors", "CommonSolve", "Printf"]
-git-tree-sha1 = "3eff988b9bd09543783e2e051b0a1eef11f65c2d"
-uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "2.3.0"
-
-    [deps.Roots.extensions]
-    RootsChainRulesCoreExt = "ChainRulesCore"
-    RootsForwardDiffExt = "ForwardDiff"
-    RootsIntervalRootFindingExt = "IntervalRootFinding"
-    RootsSymPyExt = "SymPy"
-    RootsSymPyPythonCallExt = "SymPyPythonCall"
-    RootsUnitfulExt = "Unitful"
-
-    [deps.Roots.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-    IntervalRootFinding = "d2bf35a9-74e0-55ec-b149-d360ff49b807"
-    SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
-    SymPyPythonCall = "bc8888f7-b21e-4b7c-a06a-5d9c9496438c"
-    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.Rotations]]
 deps = ["LinearAlgebra", "Quaternions", "Random", "StaticArrays"]
