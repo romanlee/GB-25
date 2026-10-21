@@ -49,6 +49,20 @@ export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 export NCCL_BUFFSIZE=33554432
 export JULIA_CUDA_USE_COMPAT=false
 
+# The aws-ofi-nccl plugin injected by `podman-hpc --nccl` is built against CUDA 12
+# (needs libcudart.so.12), fails to load in this CUDA 13 image, and NCCL silently
+# falls back to TCP sockets. Use the CUDA 13 plugin from the host's nccl/2.29.2-cu13
+# module instead (prepended to LD_LIBRARY_PATH inside the container below), plus
+# the env that module sets. NCCL_NET makes NCCL fail instead of falling back.
+HOST_NCCL=/global/common/software/nersc9/nccl/2.29.2-cu13
+HOST_CUDART=/opt/nvidia/hpc_sdk/Linux_x86_64/26.5/cuda/13.2/lib64
+export NCCL_NET="AWS Libfabric"
+export NCCL_SOCKET_IFNAME=hsn
+export NCCL_CROSS_NIC=2
+export NCCL_NET_GDR_LEVEL=PHB
+export FI_CXI_DISABLE_HOST_REGISTER=1
+export FI_CXI_RDZV_THRESHOLD=0
+
 export GB25_COMMS_OPT=$(comm)
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
@@ -61,7 +75,10 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     podman-hpc run --rm --gpu --nccl \\
     --net=host --ipc=host --pid=host --env-host \\
     -v "\${SCRATCH}:\${SCRATCH}" \\
+    -v "\${HOST_NCCL}/plugin/lib:/opt/host-nccl-plugin:ro" \\
+    -v "\${HOST_CUDART}:/opt/host-cudart:ro" \\
     $(image) \\
+    bash -c 'export LD_LIBRARY_PATH="/opt/host-nccl-plugin:\${LD_LIBRARY_PATH}:/opt/host-cudart"; exec "\$@"' gb25 \\
     $(job_dir)/launcher.sh \${PROFILER_CMD} \\
     /usr/local/julia/bin/julia --project=/opt/gb25 --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)

@@ -60,6 +60,11 @@ export REACTANT_GPU_VERSION=13.1
 export TACC_TASKS_PER_NODE=1
 export XLA_FLAGS="--xla_gpu_shard_autotuning=false \${XLA_FLAGS:-}"
 
+# The image's NCCL (2.28.9, bundled with Reactant_jll) predates the 2.29.3 fix for
+# the AArch64 weak-CAS proxy-descriptor deadlock. Use NVHPC 26.3's NCCL, as the
+# bare-metal runs did (prepended to LD_LIBRARY_PATH inside the container below).
+HOST_NCCL=/home1/apps/nvidia/Linux_aarch64/26.3/comm_libs/13.1/nccl
+
 export GB25_COMMS_OPT=$(comm)
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
@@ -70,9 +75,11 @@ fi
 
 ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
     -B "\${SCRATCH}:\${SCRATCH}" \\
+    -B "\${HOST_NCCL}/lib:/opt/host-nccl:ro" \\
     $(out_dir)/gb25_vista.sif \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
+        export LD_LIBRARY_PATH="/opt/host-nccl\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
         export SLURM_STEP_NODELIST="\${SLURM_JOB_NODELIST}"
         export SLURM_STEP_NUM_NODES="\${SLURM_JOB_NUM_NODES}"
         export SLURM_NTASKS=$(Nnodes)
