@@ -80,6 +80,9 @@ ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
         export LD_LIBRARY_PATH="/opt/host-nccl\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
+        # The image depot is not writable by the apptainer user; put a writable depot
+        # first so Reactant can create its XLA persistent cache (Scratch.jl) there.
+        export JULIA_DEPOT_PATH="$(out_dir)/vista_container_depot:\${JULIA_DEPOT_PATH}"
         export SLURM_STEP_NODELIST="\${SLURM_JOB_NODELIST}"
         export SLURM_STEP_NUM_NODES="\${SLURM_JOB_NUM_NODES}"
         export SLURM_NTASKS=$(Nnodes)
