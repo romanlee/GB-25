@@ -10,6 +10,8 @@ Built automatically via [`.github/workflows/Container.yml`](../.github/workflows
 ./container/build.sh   # build native arch and load into local Docker
 ```
 
+CI also publishes Apptainer images as ORAS artifacts `ghcr.io/prontolab/gb-25:sif-amd64` and `:sif-arm64` (`apptainer pull oras://...`, or download the manifest's single layer blob).
+
 ## NCCL
 
 The image ships its own NCCL core (`libnccl2`, pinned by the `NCCL_VERSION` build arg) in `/opt/nccl/lib`, first on the image's `LD_LIBRARY_PATH`. It replaces the older `libnccl.so.2` bundled in `Reactant_jll`; no host NCCL is mounted.
