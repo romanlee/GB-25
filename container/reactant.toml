@@ -1,0 +1,10 @@
+image = "ghcr.io/prontolab/gb-25:latest"
+mounts = ["${SCRATCH}:${SCRATCH}"]
+workdir = "/opt/gb25"
+
+[env]
+NCCL_NET_GDR_LEVEL = "2"
+
+[annotations]
+com.hooks.aws_ofi_nccl.enabled = "true"
+com.hooks.aws_ofi_nccl.variant = "cuda13"
