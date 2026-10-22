@@ -40,41 +40,33 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
 #SBATCH --output=$(job_dir)/%j.out
 #SBATCH --error=$(job_dir)/%j.err
 
-export SBATCH_ACCOUNT=$(cfg.account)
-export SALLOC_ACCOUNT=$(cfg.account)
-export JULIA_CUDA_MEMORY_POOL=none
-
 export FI_CXI_RDZV_GET_MIN=0
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 export NCCL_BUFFSIZE=33554432
-export JULIA_CUDA_USE_COMPAT=false
 
-# The aws-ofi-nccl plugin injected by `podman-hpc --nccl` is built against CUDA 12
-# (needs libcudart.so.12), fails to load in this CUDA 13 image, and NCCL silently
-# falls back to TCP sockets. Use the host's nccl/2.29.2-cu13 module instead: its
-# libnccl.so.2 *and* its CUDA 13 plugin (prepended to LD_LIBRARY_PATH inside the
-# container below, in the module's order), plus the env that module sets. Mounting
-# only the plugin left Reactant_jll's bundled libnccl.so.2 in use, and optcoms=off
-# ran ~35x slower than bare metal (job 60071928). NCCL_NET makes NCCL fail instead
-# of falling back.
-#
-# With the host core + plugin loaded (job 60094975) it was still ~27x slower:
-# libfabric picked the `tcp` provider and striped traffic over every IP interface,
-# nmn0 included. `--nccl` puts its own, older libfabric.so.1/libcxi.so.1 first on
-# LD_LIBRARY_PATH and does not pass /dev/cxi* into the container. Mount the host's
-# Cray libfabric and libcxi (ahead of everything), pass the cxi devices (plus
-# gdrdrv for libfabric's gdrcopy, if present), and set FI_PROVIDER=cxi so
-# libfabric fails instead of falling back to tcp.
-HOST_NCCL=/global/common/software/nersc9/nccl/2.29.2-cu13
-HOST_CUDART=/opt/nvidia/hpc_sdk/Linux_x86_64/26.5/cuda/13.2/lib64
+# The NCCL core comes from the image (/opt/nccl/lib). From the host we only take what
+# is tied to the Slingshot install, mounted under /opt/host:
+#   - the Cray libfabric (with the cxi provider) and libcxi, plus the /dev/cxi*
+#     devices;
+#   - the CUDA 13 aws-ofi-nccl plugin from the nccl/2.29.2-cu13 module. It links
+#     libcudart.so.13, taken from the image's CUDA 13.1 runtime (/usr/local/cuda/lib64).
+# Their other dependencies (libnl-3, libjson-c) come from the image. `podman-hpc --nccl`
+# is not used: it injects an older libfabric/libcxi and a CUDA 12 plugin, and does not
+# pass /dev/cxi* (the `tcp` fallback in job 60094975); the env it set is exported here.
+# `--env-host` replaces the image's LD_LIBRARY_PATH, so it is passed with -e.
+# /usr/lib64 holds the driver from --gpu.
+# FI_PROVIDER and NCCL_NET make libfabric/NCCL fail instead of falling back.
+HOST_NCCL_PLUGIN=/global/common/software/nersc9/nccl/2.29.2-cu13/plugin/lib
 HOST_FABRIC=/opt/cray/libfabric/2.3.1
-CXI_DEVS=\$(for d in /dev/cxi[0-9]* /dev/gdrdrv; do [ -e "\$d" ] && printf -- '--device %s ' "\$d"; done)
+CXI_DEVS=\$(printf -- '--device %s ' /dev/cxi[0-9]*)
+CONTAINER_LD_LIBRARY_PATH=/opt/nccl/lib:/opt/host/libfabric/lib64:/opt/host/cxi:/opt/host/nccl-plugin:/usr/lib64:/usr/local/cuda/lib64
 export FI_PROVIDER=cxi
 export NCCL_NET="AWS Libfabric"
 export NCCL_SOCKET_IFNAME=hsn
 export NCCL_CROSS_NIC=2
 export NCCL_NET_GDR_LEVEL=PHB
 export FI_CXI_DISABLE_HOST_REGISTER=1
+export FI_MR_CACHE_MONITOR=userfaultfd
 export FI_CXI_RDZV_THRESHOLD=0
 # Per-rank NCCL init/transport log, to confirm which core + plugin are in use.
 export NCCL_DEBUG=INFO
@@ -84,23 +76,21 @@ export NCCL_DEBUG_FILE=$(job_dir)/nccl.%h.%p.log
 export GB25_COMMS_OPT=$(comm)
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
-    PROFILER_CMD="nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{SLURM_PROCID} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
+    PROFILER_CMD="/usr/local/cuda/bin/nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{SLURM_PROCID} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
 elif [ "\${PROFILER:-}" = "xprof" ]; then
     export GB25_XPROF=true
 fi
 
 srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
-    podman-hpc run --rm --gpu --nccl \\
+    podman-hpc run --rm --gpu \\
     --net=host --ipc=host --pid=host --env-host \\
     \${CXI_DEVS} \\
     -v "\${SCRATCH}:\${SCRATCH}" \\
-    -v "\${HOST_FABRIC}:/opt/host-libfabric:ro" \\
-    -v /usr/lib64/libcxi.so.1:/opt/host-cxi/libcxi.so.1:ro \\
-    -v "\${HOST_NCCL}/lib:/opt/host-nccl:ro" \\
-    -v "\${HOST_NCCL}/plugin/lib:/opt/host-nccl-plugin:ro" \\
-    -v "\${HOST_CUDART}:/opt/host-cudart:ro" \\
+    -v "\${HOST_FABRIC}:/opt/host/libfabric:ro" \\
+    -v /usr/lib64/libcxi.so.1:/opt/host/cxi/libcxi.so.1:ro \\
+    -v "\${HOST_NCCL_PLUGIN}:/opt/host/nccl-plugin:ro" \\
+    -e LD_LIBRARY_PATH="\${CONTAINER_LD_LIBRARY_PATH}" \\
     $(image) \\
-    bash -c 'export LD_LIBRARY_PATH="/opt/host-libfabric/lib64:/opt/host-cxi:/opt/host-nccl:/opt/host-nccl-plugin:\${LD_LIBRARY_PATH}:/opt/host-cudart"; exec "\$@"' gb25 \\
     $(job_dir)/launcher.sh \${PROFILER_CMD} \\
     /usr/local/julia/bin/julia --project=/opt/gb25 --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)

@@ -9,3 +9,7 @@ Built automatically via [`.github/workflows/Container.yml`](../.github/workflows
 ```bash
 ./container/build.sh   # build native arch and load into local Docker
 ```
+
+## NCCL
+
+The image ships its own NCCL core (`libnccl2`, pinned by the `NCCL_VERSION` build arg) in `/opt/nccl/lib`, first on the image's `LD_LIBRARY_PATH`. It replaces the older `libnccl.so.2` bundled in `Reactant_jll`; no host NCCL is mounted.

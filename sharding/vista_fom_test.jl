@@ -41,45 +41,35 @@ $(account_directive)
 #SBATCH --propagate=NONE
 
 module reset
-module unload xalt 2>/dev/null || true
+module unload xalt
 module load tacc-apptainer
 module list
 
 echo "Address-space limit in job: \$(ulimit -v)"
 
-export JULIA_CUDA_MEMORY_POOL=none
-export JULIA_CUDA_USE_COMPAT=false
-export JULIA_CPU_TARGET=generic
-export NCCL_IB_DISABLE=0
 export NCCL_BUFFSIZE=33554432
-export XLA_REACTANT_GPU_MEM_FRACTION=0.8
-
-export REACTANT_GPU=cuda
-export REACTANT_GPU_VERSION=13.1
+export NCCL_DEBUG=VERSION
 
 export TACC_TASKS_PER_NODE=1
-export XLA_FLAGS="--xla_gpu_shard_autotuning=false \${XLA_FLAGS:-}"
+export XLA_FLAGS="--xla_gpu_shard_autotuning=false"
 
-# The image's NCCL (2.28.9, bundled with Reactant_jll) predates the 2.29.3 fix for
-# the AArch64 weak-CAS proxy-descriptor deadlock. Use NVHPC 26.3's NCCL, as the
-# bare-metal runs did (prepended to LD_LIBRARY_PATH inside the container below).
-HOST_NCCL=/home1/apps/nvidia/Linux_aarch64/26.3/comm_libs/13.1/nccl
+# Nothing is mounted from the host apart from the driver (--nv): the NCCL core comes
+# from the image (/opt/nccl/lib, first on the image's LD_LIBRARY_PATH) and talks to
+# InfiniBand through NCCL's built-in NET/IB with the image's rdma-core.
 
 export GB25_COMMS_OPT=$(comm)
 
 if [ "\${PROFILER:-}" = "nsys" ]; then
-    PROFILER_CMD="nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{OMPI_COMM_WORLD_RANK} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
+    PROFILER_CMD="/usr/local/cuda/bin/nsys profile --trace=cuda,nvtx --sample=none --capture-range=cudaProfilerApi --capture-range-end=stop --cuda-graph-trace=node --output=$(job_dir)/nsys-job-%q{SLURM_JOB_ID}-rank-%q{OMPI_COMM_WORLD_RANK} env GB25_NSYS=true JULIA_CUDA_NSYS=nsys"
 elif [ "\${PROFILER:-}" = "xprof" ]; then
     export GB25_XPROF=true
 fi
 
 ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
     -B "\${SCRATCH}:\${SCRATCH}" \\
-    -B "\${HOST_NCCL}/lib:/opt/host-nccl:ro" \\
     $(out_dir)/gb25_vista.sif \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
-        export LD_LIBRARY_PATH="/opt/host-nccl\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"
         # The image depot is not writable by the apptainer user; put a writable depot
         # first so Reactant can create its XLA persistent cache (Scratch.jl) there.
         export JULIA_DEPOT_PATH="$(out_dir)/vista_container_depot:\${JULIA_DEPOT_PATH}"

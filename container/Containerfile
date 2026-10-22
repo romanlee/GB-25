@@ -4,26 +4,40 @@ FROM ${BASE_IMAGE}
 
 ARG TARGETARCH
 ARG JULIA_VERSION=1.11.9
+# NCCL core used on every cluster instead of the older one bundled in Reactant_jll.
+# 2.31.2 ran Vista job 1089721 without the AArch64 hang (the bundled 2.28.9 predates
+# the 2.29.3 weak-CAS fix). Built against CUDA 13.3; runs on the 13.1 runtime via
+# CUDA minor-version compatibility.
+ARG NCCL_VERSION=2.31.2-1+cuda13.3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install user-space RDMA verbs (for InfiniBand clusters), CUDA driver stub (for build-time
-# precompilation without a GPU), and Nsight Systems CLI.
-# CUDA 13.1 runtime, NCCL (libnccl.so.2), and MPI JLLs are provided directly by
-# Julia's CUDA_Runtime_jll, Reactant_jll, and MPICH_jll artifacts.
+# precompilation without a GPU), Nsight Systems CLI, the pinned NCCL core, and libjson-c
+# (needed by the Slingshot libcxi that Perlmutter mounts from the host).
+# CUDA 13.1 runtime and MPI JLLs are provided directly by Julia's CUDA_Runtime_jll and
+# MPICH_jll artifacts. Reactant_jll's bundled libnccl.so.2 wins over the system library
+# dirs, so the NCCL from apt is linked into /opt/nccl/lib and put first on
+# LD_LIBRARY_PATH (ENV below).
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         libibverbs-dev \
         ibverbs-providers \
+        libjson-c5 \
         cuda-driver-dev-13-1 \
-        cuda-nsight-systems-13-1 && \
+        cuda-nsight-systems-13-1 \
+        libnccl2=${NCCL_VERSION} && \
+    apt-mark hold libnccl2 && \
+    mkdir -p /opt/nccl/lib && \
+    dpkg -L libnccl2 | grep '/libnccl\.so' | xargs -I{} ln -s {} /opt/nccl/lib/ && \
     rm -f /etc/ld.so.conf.d/cuda*.conf && \
     ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
     ldconfig && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+ENV LD_LIBRARY_PATH="/opt/nccl/lib:${LD_LIBRARY_PATH}"
 
 # Install official Julia binary for target architecture (amd64 or arm64)
 RUN mkdir -p /usr/local/julia && \
