@@ -2,7 +2,7 @@
 
 julia_version = "1.11.9"
 manifest_format = "2.0"
-project_hash = "e09e3ee2aa7bd9261d9111c4098a97dbae4bf248"
+project_hash = "4a716c8eaa55a30f81c40f8f316e3386499d28dd"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1357,14 +1357,16 @@ version = "1.6.0"
 
 [[deps.Reactant]]
 deps = ["Adapt", "BFloat16s", "CEnum", "Crayons", "Downloads", "EnumX", "Enzyme", "EnzymeCore", "FileWatching", "Functors", "GPUArraysCore", "GPUCompiler", "JSON", "LLVM", "LLVMOpenMP_jll", "Libdl", "LinearAlgebra", "OrderedCollections", "PrecompileTools", "Preferences", "PrettyTables", "ProtoBuf", "Random", "ReactantCore", "Reactant_jll", "SHA", "ScopedValues", "Scratch", "Serialization", "Setfield", "Sockets", "StableRNGs", "StructUtils", "StyledStrings", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "7b816086981b6b05ff39f986dba635fa7584262f"
+git-tree-sha1 = "6f063e2fb54a8d52b818efaf8f5ca78e589fe7d1"
+repo-rev = "ad071cc6"
+repo-url = "https://github.com/EnzymeAD/Reactant.jl.git"
 uuid = "3c362404-f566-11ee-1572-e11a4b42c853"
-version = "0.2.295"
+version = "0.2.301"
 
     [deps.Reactant.extensions]
     ReactantAbstractFFTsExt = "AbstractFFTs"
     ReactantArrayInterfaceExt = "ArrayInterface"
-    ReactantCUDAExt = ["CUDA", "Enzyme", "GPUCompiler", "KernelAbstractions", "LLVM", "Printf"]
+    ReactantCUDAExt = ["CUDA", "Enzyme", "GPUCompiler", "KernelAbstractions", "LLVM"]
     ReactantDLFP8TypesExt = "DLFP8Types"
     ReactantDatesExt = "Dates"
     ReactantFFTWExt = ["FFTW", "AbstractFFTs", "LinearAlgebra"]
@@ -1413,7 +1415,6 @@ version = "0.2.295"
     OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
     OneHotArrays = "0b1bfda6-eb8a-41d2-88d8-f5af5cad476f"
     PDMats = "90014a1f-27ba-587c-ab20-58faa44d9150"
-    Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
     PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
     Random123 = "74087812-796a-5b5d-8853-05524746bad3"
     SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
@@ -1437,9 +1438,9 @@ version = "0.1.26"
 
 [[deps.Reactant_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "ab01888bc7cd88db9b646bebf9ab6634b8db5435"
+git-tree-sha1 = "f04c19f6b46daf8d915a6aa38c9306bd01c6fe9d"
 uuid = "0192cb87-2b54-54ad-80e0-3be72ad8a3c0"
-version = "0.0.425+0"
+version = "0.0.432+0"
 
 [[deps.RealDot]]
 deps = ["LinearAlgebra"]

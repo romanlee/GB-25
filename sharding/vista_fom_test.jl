@@ -6,7 +6,7 @@ out_dir = joinpath(ENV["SCRATCH"], "GB25")
 
 submit   = true
 run_name = "r_react_vista_"
-time     = "00:40:00"
+time     = "00:25:00"
 Ngpus      = [8]
 comms_opts = ["off", "on"]
 
