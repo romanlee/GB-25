@@ -48,6 +48,9 @@ export NCCL_BUFFSIZE=33554432
 # is tied to the Slingshot install, mounted under /opt/host:
 #   - the Cray libfabric (with the cxi provider) and libcxi, plus the /dev/cxi*
 #     devices;
+#   - the GDRCopy library and /dev/gdrdrv. libfabric dlopens "libgdrapi.so"; without it,
+#     it copies GPU buffers with cudaMemcpy + cudaDeviceSynchronize on NCCL's proxy
+#     thread, which deadlocks against the running NCCL kernel;
 #   - the CUDA 13 aws-ofi-nccl plugin from the nccl/2.29.2-cu13 module. It links
 #     libcudart.so.13, taken from the image's CUDA 13.1 runtime (/usr/local/cuda/lib64).
 # Their other dependencies (libnl-3, libjson-c) come from the image. `podman-hpc --nccl`
@@ -58,8 +61,8 @@ export NCCL_BUFFSIZE=33554432
 # FI_PROVIDER and NCCL_NET make libfabric/NCCL fail instead of falling back.
 HOST_NCCL_PLUGIN=/global/common/software/nersc9/nccl/2.29.2-cu13/plugin/lib
 HOST_FABRIC=/opt/cray/libfabric/2.3.1
-CXI_DEVS=\$(printf -- '--device %s ' /dev/cxi[0-9]*)
-CONTAINER_LD_LIBRARY_PATH=/opt/nccl/lib:/opt/host/libfabric/lib64:/opt/host/cxi:/opt/host/nccl-plugin:/usr/lib64:/usr/local/cuda/lib64
+CXI_DEVS=\$(printf -- '--device %s ' /dev/cxi[0-9]* /dev/gdrdrv)
+CONTAINER_LD_LIBRARY_PATH=/opt/nccl/lib:/opt/host/libfabric/lib64:/opt/host/cxi:/opt/host/gdrcopy:/opt/host/nccl-plugin:/usr/lib64:/usr/local/cuda/lib64
 export FI_PROVIDER=cxi
 export FI_LOG_LEVEL=warn
 export NCCL_NET="AWS Libfabric"
@@ -89,6 +92,7 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     -v "\${SCRATCH}:\${SCRATCH}" \\
     -v "\${HOST_FABRIC}:/opt/host/libfabric:ro" \\
     -v /usr/lib64/libcxi.so.1:/opt/host/cxi/libcxi.so.1:ro \\
+    -v /usr/lib64/libgdrapi.so.2:/opt/host/gdrcopy/libgdrapi.so:ro \\
     -v "\${HOST_NCCL_PLUGIN}:/opt/host/nccl-plugin:ro" \\
     -e LD_LIBRARY_PATH="\${CONTAINER_LD_LIBRARY_PATH}" \\
     $(image) \\
