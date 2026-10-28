@@ -61,6 +61,7 @@ HOST_FABRIC=/opt/cray/libfabric/2.3.1
 CXI_DEVS=\$(printf -- '--device %s ' /dev/cxi[0-9]*)
 CONTAINER_LD_LIBRARY_PATH=/opt/nccl/lib:/opt/host/libfabric/lib64:/opt/host/cxi:/opt/host/nccl-plugin:/usr/lib64:/usr/local/cuda/lib64
 export FI_PROVIDER=cxi
+export FI_LOG_LEVEL=warn
 export NCCL_NET="AWS Libfabric"
 export NCCL_SOCKET_IFNAME=hsn
 export NCCL_CROSS_NIC=2

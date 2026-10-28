@@ -19,6 +19,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 # MPICH_jll artifacts. Reactant_jll's bundled libnccl.so.2 wins over the system library
 # dirs, so the NCCL from apt is linked into /opt/nccl/lib and put first on
 # LD_LIBRARY_PATH (ENV below).
+# The unversioned libcudart.so (only in cuda-cudart-dev) is linked too: libfabric's CUDA
+# support dlopens that name, and without it GPU buffers are registered as host memory,
+# which the Slingshot cxi driver rejects (NCCL "Unable to register memory ... Bad address").
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -34,6 +37,7 @@ RUN apt-get update && \
     dpkg -L libnccl2 | grep '/libnccl\.so' | xargs -I{} ln -s {} /opt/nccl/lib/ && \
     rm -f /etc/ld.so.conf.d/cuda*.conf && \
     ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 && \
+    ln -sf libcudart.so.13 /usr/local/cuda/lib64/libcudart.so && \
     ldconfig && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
