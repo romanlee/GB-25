@@ -1357,8 +1357,8 @@ version = "1.6.0"
 
 [[deps.Reactant]]
 deps = ["Adapt", "BFloat16s", "CEnum", "Crayons", "Downloads", "EnumX", "Enzyme", "EnzymeCore", "FileWatching", "Functors", "GPUArraysCore", "GPUCompiler", "JSON", "LLVM", "LLVMOpenMP_jll", "Libdl", "LinearAlgebra", "OrderedCollections", "PrecompileTools", "Preferences", "PrettyTables", "ProtoBuf", "Random", "ReactantCore", "Reactant_jll", "SHA", "ScopedValues", "Scratch", "Serialization", "Setfield", "Sockets", "StableRNGs", "StructUtils", "StyledStrings", "UUIDs", "p7zip_jll"]
-git-tree-sha1 = "6f063e2fb54a8d52b818efaf8f5ca78e589fe7d1"
-repo-rev = "ad071cc6"
+git-tree-sha1 = "d7fec2cedaa67c8012891a6c3040bcee244d9f20"
+repo-rev = "1bde203c"
 repo-url = "https://github.com/EnzymeAD/Reactant.jl.git"
 uuid = "3c362404-f566-11ee-1572-e11a4b42c853"
 version = "0.2.301"
@@ -1438,9 +1438,9 @@ version = "0.1.26"
 
 [[deps.Reactant_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "f04c19f6b46daf8d915a6aa38c9306bd01c6fe9d"
+git-tree-sha1 = "0823dd1b0f16834bc789e75ceb610de4ae44ba40"
 uuid = "0192cb87-2b54-54ad-80e0-3be72ad8a3c0"
-version = "0.0.432+0"
+version = "0.0.435+0"
 
 [[deps.RealDot]]
 deps = ["LinearAlgebra"]
