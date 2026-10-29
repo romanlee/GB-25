@@ -453,7 +453,11 @@ function moist_baroclinic_wave_model(arch;
         NamedTuple()
     end
 
-    model = AtmosphereModel(grid; dynamics, coriolis, momentum_advection, scalar_advection,
+    formulation = Breeze.LiquidIcePotentialTemperatureFormulation(
+        temperature_solver = Breeze.Thermodynamics.FixedIterations(2)
+    )
+
+    model = AtmosphereModel(grid; formulation, dynamics, coriolis, momentum_advection, scalar_advection,
                             microphysics, boundary_conditions)
 
     FT = eltype(grid)

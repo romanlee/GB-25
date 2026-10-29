@@ -64,27 +64,29 @@ function generate_and_submit(submit_job_writer, cfg::JobConfig; caller_file::Str
 
     # Copy environment files and run files for future reference.
     for filename in ("Project.toml", manifest_file, "LocalPreferences.toml")
-        if filename == "LocalPreferences.toml" && !isfile(joinpath("..", filename))
+        if filename == "LocalPreferences.toml" && !isfile(joinpath(project_path, filename))
             continue
         end
-        cp(joinpath("..", filename), joinpath(out_path, filename))
+        cp(joinpath(project_path, filename), joinpath(out_path, filename))
     end
     run_file = joinpath(out_path, basename(input_file))
     cp(input_file, run_file)
 
     # Capture repository state
-    git_describe = readchomp(`git -C $(project_path) --no-pager describe --tags --always --dirty`)
-    git_branch = readchomp(`git -C $(project_path) rev-parse --abbrev-ref HEAD`)
-    git_diff = read(`git -C $(project_path) --no-pager diff --no-ext-diff HEAD`, String)
-    open(joinpath(out_path, "run-info.toml"), "w") do io
-        print(io, """
+    if ispath(joinpath(project_path, ".git"))
+        git_describe = readchomp(`git -C $(project_path) --no-pager describe --tags --always --dirty`)
+        git_branch = readchomp(`git -C $(project_path) rev-parse --abbrev-ref HEAD`)
+        git_diff = read(`git -C $(project_path) --no-pager diff --no-ext-diff HEAD`, String)
+        open(joinpath(out_path, "run-info.toml"), "w") do io
+            print(io, """
 git_describe = "$(git_describe)"
 git_branch = "$(git_branch)"
 """)
-    end
-    if !isempty(git_diff)
-        open(joinpath(out_path, "git.diff"), "w") do io
-            print(io, git_diff)
+        end
+        if !isempty(git_diff)
+            open(joinpath(out_path, "git.diff"), "w") do io
+                print(io, git_diff)
+            end
         end
     end
 
@@ -138,7 +140,7 @@ export XLA_FLAGS="--xla_gpu_first_collective_call_warn_stuck_timeout_seconds=150
 export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_to=$(job_dir)/xla_dump \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_hlo_pass_re=.* \${XLA_FLAGS}"
-export XLA_REACTANT_GPU_MEM_FRACTION=\${XLA_REACTANT_GPU_MEM_FRACTION:-0.8}
+export XLA_REACTANT_GPU_MEM_FRACTION=0.8
 
 # Important else XLA might hang indefinitely
 unset no_proxy http_proxy https_proxy NO_PROXY HTTP_PROXY HTTPS_PROXY
@@ -157,8 +159,12 @@ echo "[\${SLURM_JOB_ID}.\${SLURM_PROCID}] Process exited with code \${?}"
                                             comm::String))
             end
             if cfg.submit
-                run(`sbatch $(sbatch_name)`)
-                run(`squeue -u $(cfg.username)`)
+                if !isnothing(Sys.which("sbatch"))
+                    run(`sbatch $(sbatch_name)`)
+                    run(`squeue -u $(cfg.username)`)
+                else
+                    println(sbatch_name)
+                end
             else
                 @warn "job not submitted"
             end
