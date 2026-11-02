@@ -3,6 +3,10 @@ include("common_submission_generator.jl")
 account = get(ENV, "VISTA_ACCOUNT", "")
 queue = "gh-dev"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
+# SIF set by run_vista.sh. The writable depot (XLA cache) is named after it, so jobs with
+# different images never share a cache.
+sif = ENV["GB25_SIF"]
+cache_depot = replace(sif, r"\.sif$" => "") * "_depot"
 
 submit   = true
 run_name = "r_react_vista_"
@@ -67,12 +71,12 @@ fi
 
 ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
     -B "\${SCRATCH}:\${SCRATCH}" \\
-    $(out_dir)/gb25_vista.sif \\
+    $(sif) \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
         # The image depot is not writable by the apptainer user; put a writable depot
         # first so Reactant can create its XLA persistent cache (Scratch.jl) there.
-        export JULIA_DEPOT_PATH="$(out_dir)/vista_container_depot:\${JULIA_DEPOT_PATH}"
+        export JULIA_DEPOT_PATH="$(cache_depot):\${JULIA_DEPOT_PATH}"
         export SLURM_STEP_NODELIST="\${SLURM_JOB_NODELIST}"
         export SLURM_STEP_NUM_NODES="\${SLURM_JOB_NUM_NODES}"
         export SLURM_NTASKS=$(Nnodes)

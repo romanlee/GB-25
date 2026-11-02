@@ -25,7 +25,7 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
                                       comm::String)
 
     x, y, z = (512, 512, 64)
-    image = get(ENV, "GB25_IMAGE", "ghcr.io/prontolab/gb-25:latest")
+    image = ENV["GB25_IMAGE"]  # set by run_perlmutter.sh
 
                 """
 #!/bin/bash -l
