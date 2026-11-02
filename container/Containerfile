@@ -15,6 +15,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install user-space RDMA verbs (for InfiniBand clusters), CUDA driver stub (for build-time
 # precompilation without a GPU), Nsight Systems CLI, the pinned NCCL core, and libjson-c
 # (needed by the Slingshot libcxi that Perlmutter mounts from the host).
+# gdb and procps (ps) are for on-node diagnosis of hangs: native backtraces of all
+# threads (XLA compiles on its own thread pools, which Julia's profiler does not see).
 # CUDA 13.1 runtime and MPI JLLs are provided directly by Julia's CUDA_Runtime_jll and
 # MPICH_jll artifacts. Reactant_jll's bundled libnccl.so.2 wins over the system library
 # dirs, so the NCCL from apt is linked into /opt/nccl/lib and put first on
@@ -29,6 +31,8 @@ RUN apt-get update && \
         libibverbs-dev \
         ibverbs-providers \
         libjson-c5 \
+        gdb \
+        procps \
         cuda-driver-dev-13-1 \
         cuda-nsight-systems-13-1 \
         libnccl2=${NCCL_VERSION} && \
