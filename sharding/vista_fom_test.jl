@@ -3,10 +3,7 @@ include("common_submission_generator.jl")
 account = get(ENV, "VISTA_ACCOUNT", "")
 queue = "gh-dev"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
-# SIF set by run_vista.sh. The writable depot (XLA cache) is named after it, so jobs with
-# different images never share a cache.
-sif = ENV["GB25_SIF"]
-cache_depot = replace(sif, r"\.sif$" => "") * "_depot"
+sif = get(ENV, "GB25_SIF", joinpath(out_dir, "gb25_vista_baseline.sif"))
 
 submit   = true
 run_name = "r_react_vista_"
@@ -20,7 +17,7 @@ gpus_per_node = 1
 cpus_per_task = 72
 
 vista_config = JobConfig(; username, account, out_dir, time, cpus_per_task, Ngpus,
-                         comms_opts, run_name, gpus_per_node, type, submit)
+                         comms_opts, run_name, gpus_per_node, type, submit, container = true)
 
 function vista_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir, Ngpu,
                                  resolution_fraction, project_path, run_file,
@@ -45,17 +42,13 @@ $(account_directive)
 #SBATCH --propagate=NONE
 
 module reset
-module unload xalt
 module load tacc-apptainer
 module list
 
-echo "Address-space limit in job: \$(ulimit -v)"
-
 export NCCL_BUFFSIZE=33554432
-export NCCL_DEBUG=VERSION
+export XLA_REACTANT_GPU_MEM_FRACTION=0.8
 
 export TACC_TASKS_PER_NODE=1
-export XLA_FLAGS="--xla_gpu_shard_autotuning=false"
 
 # Nothing is mounted from the host apart from the driver (--nv): the NCCL core comes
 # from the image (/opt/nccl/lib, first on the image's LD_LIBRARY_PATH) and talks to
@@ -69,14 +62,11 @@ elif [ "\${PROFILER:-}" = "xprof" ]; then
     export GB25_XPROF=true
 fi
 
-ibrun -n $(Nnodes) apptainer exec --nv --writable-tmpfs \\
+ibrun -n $(Nnodes) apptainer exec --nv --scratch /tmp \\
     -B "\${SCRATCH}:\${SCRATCH}" \\
     $(sif) \\
     $(job_dir)/launcher.sh \\
     \${PROFILER_CMD} sh -c '
-        # The image depot is not writable by the apptainer user; put a writable depot
-        # first so Reactant can create its XLA persistent cache (Scratch.jl) there.
-        export JULIA_DEPOT_PATH="$(cache_depot):\${JULIA_DEPOT_PATH}"
         export SLURM_STEP_NODELIST="\${SLURM_JOB_NODELIST}"
         export SLURM_STEP_NUM_NODES="\${SLURM_JOB_NUM_NODES}"
         export SLURM_NTASKS=$(Nnodes)

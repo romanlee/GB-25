@@ -65,17 +65,12 @@ ENV JULIA_LLVM_ARGS="-global-isel=0"
 ENV JULIA_PKG_PRECOMPILE_AUTO="0"
 ENV JULIA_CUDA_MEMORY_POOL="none"
 ENV JULIA_CUDA_USE_COMPAT="false"
-ENV REACTANT_GPU="cuda"
-ENV REACTANT_GPU_VERSION="13.1"
 
 # Copy GB-25 project definition first so package/artifact downloads are cached in their own layer
 WORKDIR /opt/gb25
 COPY Project.toml /opt/gb25/Project.toml
 COPY container/Manifest.toml /opt/gb25/Manifest.toml
 COPY container/LocalPreferences.toml /opt/gb25/LocalPreferences.toml
-COPY Project.toml /usr/local/share/julia_depot/environments/v1.11/Project.toml
-COPY container/Manifest.toml /usr/local/share/julia_depot/environments/v1.11/Manifest.toml
-COPY container/LocalPreferences.toml /usr/local/share/julia_depot/environments/v1.11/LocalPreferences.toml
 
 # Download all packages and JLL artifacts and set read permissions within the same layer
 # to avoid OverlayFS copy-up duplication of the 6 GB artifacts directory in later layers.
@@ -95,13 +90,15 @@ COPY simulations /opt/gb25/simulations
 RUN OPENBLAS_NUM_THREADS=1 \
     JULIA_NUM_PRECOMPILE_TASKS=8 \
     JULIA_IMAGE_THREADS=8 \
-    JULIA_LLVM_ARGS="-global-isel=0" \
     LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
     julia --startup-file=no --project=/opt/gb25 -O0 \
         -e 'using Pkg; Pkg.precompile()' && \
     OPENBLAS_NUM_THREADS=1 \
-    JULIA_LLVM_ARGS="-global-isel=0" \
     LD_LIBRARY_PATH="/usr/local/cuda/lib64/stubs:${LD_LIBRARY_PATH:-}" \
     julia --startup-file=no --project=/opt/gb25 --compiled-modules=strict -O0 \
         -e 'using GordonBell25' && \
     chmod -R a+rX /usr/local/share/julia_depot/compiled /usr/local/share/julia_depot/logs /opt/gb25
+
+# At runtime, put /tmp first so Scratch.jl (XLA autotuning cache) writes to node-local /tmp
+# on every runtime (podman-hpc, apptainer, enroot) while packages/artifacts load from the image.
+ENV JULIA_DEPOT_PATH="/tmp:/usr/local/share/julia_depot"

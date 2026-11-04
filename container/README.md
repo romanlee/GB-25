@@ -6,7 +6,7 @@ Single multi-architecture (`linux/amd64`, `linux/arm64`) [`Containerfile`](Conta
 
 Built on every push (and on manual dispatch) by [`.github/workflows/Container.yml`](../.github/workflows/Container.yml). The tag is `IMAGE_TAG`, set in the `env:` at the top of the workflow.
 
-This publishes `ghcr.io/<owner>/gb-25:<IMAGE_TAG>` (multi-arch) and the Apptainer images `:<IMAGE_TAG>-sif-amd64` / `:<IMAGE_TAG>-sif-arm64` as ORAS artifacts (`apptainer pull oras://...`, or download the manifest's single layer blob). Local build: `./container/build.sh` (native arch, loaded into local Docker).
+This publishes `ghcr.io/<owner>/gb-25:<IMAGE_TAG>` (multi-arch) and the Apptainer images `:<IMAGE_TAG>-sif-amd64` / `:<IMAGE_TAG>-sif-arm64` as ORAS artifacts (`apptainer pull oras://...`, or download the manifest's single layer blob). Local build: `./container/build.sh --load -t gb-25` (native arch, loaded into local Docker).
 
 ## NCCL
 

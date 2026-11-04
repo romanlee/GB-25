@@ -55,12 +55,11 @@ jobs:
         env:
           REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
         run: |
-          export REGISTRY_IMAGE="${REGISTRY_IMAGE,,}"
           ./container/build.sh \
-            --set "*.platform=linux/${{ matrix.arch }}" \
-            --set "*.output=type=image,name=${REGISTRY_IMAGE},push-by-digest=true,push=true" \
+            --platform "linux/${{ matrix.arch }}" \
+            --output "type=image,name=${REGISTRY_IMAGE,,},push-by-digest=true,push=true" \
             --metadata-file "/tmp/metadata-${{ matrix.arch }}.json"
-          jq -r '.["default"]["containerimage.digest"]' "/tmp/metadata-${{ matrix.arch }}.json" > "/tmp/digest-${{ matrix.arch }}"
+          jq -r '.["containerimage.digest"]' "/tmp/metadata-${{ matrix.arch }}.json" > "/tmp/digest-${{ matrix.arch }}"
 
       - name: Upload digest
         uses: actions/upload-artifact@v4

@@ -18,14 +18,14 @@ gpus_per_node = 4
 cpus_per_task = 16
 
 perlmutter_config = JobConfig(; username, account, out_dir, time, cpus_per_task, Ngpus, comms_opts,
-                              run_name, gpus_per_node, type, submit)
+                              run_name, gpus_per_node, type, submit, container = true)
 
 function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir, Ngpu,
                                       resolution_fraction, project_path, run_file,
                                       comm::String)
 
     x, y, z = (512, 512, 64)
-    image = ENV["GB25_IMAGE"]  # set by run_perlmutter.sh
+    image = get(ENV, "GB25_IMAGE", "ghcr.io/prontolab/gb-25:baseline")
 
                 """
 #!/bin/bash -l
@@ -43,6 +43,7 @@ function perlmutter_submit_job_writer(cfg::JobConfig, job_name, Nnodes, job_dir,
 export FI_CXI_RDZV_GET_MIN=0
 export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
 export NCCL_BUFFSIZE=33554432
+export XLA_REACTANT_GPU_MEM_FRACTION=0.8
 
 # The NCCL core comes from the image (/opt/nccl/lib). From the host we only take what
 # is tied to the Slingshot install, mounted under /opt/host:
@@ -72,10 +73,6 @@ export NCCL_NET_GDR_LEVEL=PHB
 export FI_CXI_DISABLE_HOST_REGISTER=1
 export FI_MR_CACHE_MONITOR=userfaultfd
 export FI_CXI_RDZV_THRESHOLD=0
-# Per-rank NCCL init/transport log, to confirm which core + plugin are in use.
-export NCCL_DEBUG=INFO
-export NCCL_DEBUG_SUBSYS=INIT,NET,ENV
-export NCCL_DEBUG_FILE=$(job_dir)/nccl.%h.%p.log
 
 export GB25_COMMS_OPT=$(comm)
 
@@ -97,7 +94,8 @@ srun -n $(Nnodes) -c 32 -G $(Ngpu) --cpu-bind=verbose,cores \\
     -e LD_LIBRARY_PATH="\${CONTAINER_LD_LIBRARY_PATH}" \\
     $(image) \\
     $(job_dir)/launcher.sh \${PROFILER_CMD} \\
-    /usr/local/julia/bin/julia --project=/opt/gb25 --compiled-modules=strict -O0 \\
+    /usr/local/julia/bin/julia --project=/opt/gb25 --startup-file=no \\
+    --compiled-modules=strict -O0 \\
     $(run_file) --grid-x $(x) --grid-y $(y) --grid-z $(z)
 """
 end
