@@ -140,7 +140,7 @@ export JULIA_DEPOT_PATH=$(cfg.container ? "/tmp:/usr/local/share/julia_depot" : 
 # export TF_CPP_MAX_VLOG_LEVEL=3
 #
 export XLA_FLAGS="--xla_gpu_first_collective_call_warn_stuck_timeout_seconds=1500 --xla_gpu_first_collective_call_terminate_timeout_seconds=3000 \${XLA_FLAGS}"
-export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion \${XLA_FLAGS}"
+export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion --xla_gpu_shard_autotuning=false \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_to=$(job_dir)/xla_dump \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_hlo_pass_re=.* \${XLA_FLAGS}"
 export XLA_REACTANT_GPU_MEM_FRACTION=\${XLA_REACTANT_GPU_MEM_FRACTION:-0.8}
