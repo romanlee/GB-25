@@ -17,6 +17,7 @@ run_postfix = get(ENV, "GB25_RUN_POSTFIX", randstring(4))
     type::String
     submit::Bool
     comms_opts::Vector{String} = ["off", "on"]
+    container::Bool = false
 end
 
 function generate_and_submit(submit_job_writer, cfg::JobConfig; caller_file::String)
@@ -43,31 +44,35 @@ function generate_and_submit(submit_job_writer, cfg::JobConfig; caller_file::Str
     out_path = joinpath(cfg.out_dir, run_prefix, "$(timestamp)_$(run_postfix)")
     project_path = dirname(@__DIR__)
 
-    manifest_file = let
-        dir = readdir(project_path)
-        idx = findfirst(endswith("Manifest.toml"), dir)
-        if !isnothing(idx)
-            "Manifest.toml"
-        else
-            idx = findfirst(endswith("Manifest-v$(VERSION.major).$(VERSION.minor).toml"), dir)
+    if !cfg.container
+        manifest_file = let
+            dir = readdir(project_path)
+            idx = findfirst(endswith("Manifest.toml"), dir)
             if !isnothing(idx)
-                "Manifest-v$(VERSION.major).$(VERSION.minor).toml"
+                "Manifest.toml"
+            else
+                idx = findfirst(endswith("Manifest-v$(VERSION.major).$(VERSION.minor).toml"), dir)
+                if !isnothing(idx)
+                    "Manifest-v$(VERSION.major).$(VERSION.minor).toml"
+                end
             end
         end
-    end
 
-    if isnothing(manifest_file)
-        error("Manifest.toml missing in the top-level directory of this repository! Instantiate the environment before submitting the job")
+        if isnothing(manifest_file)
+            error("Manifest.toml missing in the top-level directory of this repository! Instantiate the environment before submitting the job")
+        end
     end
 
     mkpath(out_path)
 
-    # Copy environment files and run files for future reference.
-    for filename in ("Project.toml", manifest_file, "LocalPreferences.toml")
-        if filename == "LocalPreferences.toml" && !isfile(joinpath("..", filename))
-            continue
+    if !cfg.container
+        # Copy environment files and run files for future reference.
+        for filename in ("Project.toml", manifest_file, "LocalPreferences.toml")
+            if filename == "LocalPreferences.toml" && !isfile(joinpath("..", filename))
+                continue
+            end
+            cp(joinpath("..", filename), joinpath(out_path, filename))
         end
-        cp(joinpath("..", filename), joinpath(out_path, filename))
     end
     run_file = joinpath(out_path, basename(input_file))
     cp(input_file, run_file)
@@ -131,11 +136,11 @@ export TZ=UTC
 export Ngpu=$(Ngpu)
 export resolution_fraction=$(resolution_fraction)
 export JULIA_DEBUG="Reactant,Reactant_jll"
-export JULIA_DEPOT_PATH=$(join(Base.DEPOT_PATH, ':'))
+export JULIA_DEPOT_PATH=$(cfg.container ? "/tmp:/usr/local/share/julia_depot" : join(Base.DEPOT_PATH, ':'))
 # export TF_CPP_MAX_VLOG_LEVEL=3
 #
 export XLA_FLAGS="--xla_gpu_first_collective_call_warn_stuck_timeout_seconds=1500 --xla_gpu_first_collective_call_terminate_timeout_seconds=3000 \${XLA_FLAGS}"
-export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion \${XLA_FLAGS}"
+export XLA_FLAGS="--xla_disable_hlo_passes=host-offload-legalize,hlo_constant_splitter,multi_output_fusion --xla_gpu_shard_autotuning=false \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_to=$(job_dir)/xla_dump \${XLA_FLAGS}"
 # export XLA_FLAGS="--xla_dump_hlo_pass_re=.* \${XLA_FLAGS}"
 export XLA_REACTANT_GPU_MEM_FRACTION=\${XLA_REACTANT_GPU_MEM_FRACTION:-0.8}
