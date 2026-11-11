@@ -3,7 +3,7 @@ include("common_submission_generator.jl")
 account = get(ENV, "VISTA_ACCOUNT", "")
 queue = "gh-dev"
 out_dir = joinpath(ENV["SCRATCH"], "GB25")
-sif = get(ENV, "GB25_SIF", joinpath(out_dir, "gb25_vista_baseline.sif"))
+sif = get(ENV, "GB25_SIF", joinpath(out_dir, "gb25_vista.sif"))
 
 submit   = true
 run_name = "r_react_vista_"

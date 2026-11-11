@@ -14,7 +14,7 @@ on:
 # Tag this branch publishes: `:<IMAGE_TAG>` (multi-arch) and `:<IMAGE_TAG>-sif-<arch>`
 # (Apptainer, ORAS). Change it here; the run scripts and generators must match.
 env:
-  IMAGE_TAG: baseline
+  IMAGE_TAG: latest
 
 permissions:
   contents: read

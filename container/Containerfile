@@ -69,7 +69,6 @@ ENV JULIA_CUDA_USE_COMPAT="false"
 # Copy GB-25 project definition first so package/artifact downloads are cached in their own layer
 WORKDIR /opt/gb25
 COPY Project.toml /opt/gb25/Project.toml
-COPY container/Manifest.toml /opt/gb25/Manifest.toml
 COPY container/LocalPreferences.toml /opt/gb25/LocalPreferences.toml
 
 # Download all packages and JLL artifacts and set read permissions within the same layer
